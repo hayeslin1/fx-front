@@ -632,6 +632,30 @@ export interface CustomerDetailResp {
   recentOrders: Order[];
 }
 
+/** 运营建户（演示级：无 KYC 资料，仅姓名/邮箱/初始密码） */
+export interface CustomerCreateReq {
+  name: string;
+  email: string;
+  password: string;
+  requestId?: string;
+}
+
+export interface CustomerUpdateReq {
+  customerId: string;
+  name?: string;
+  email?: string;
+}
+
+export interface CustomerResetPasswordReq {
+  customerId: string;
+  newPassword: string;
+  requestId?: string;
+}
+
+export interface CustomerResetPasswordResp {
+  customerId: string;
+}
+
 // ---------- overview.ts ----------
 export type OverviewRangeType = 'TODAY' | 'LAST_7D' | 'LAST_30D' | 'CUSTOM';
 

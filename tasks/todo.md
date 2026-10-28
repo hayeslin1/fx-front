@@ -51,3 +51,39 @@
 - Reverse Sync（文档已回写）：§5.3/§7.1 持久化改为手写变更订阅、§7.2 apply 异步签名、§3.1 zustand 描述与 radix-ui 行、§3.2 增 jsdom、§3.4 baseUrl 注记、§4.1 目录树（components/common、lib 增 hash/uuid/utils、pages/NotFoundPage）、§5.4 C-002 USD 余额笔误修正（17,176.87→20,776.87，三笔买 USD 的 USD 腿均为入账）、§12.1 jsdom 实现注记、演示账号邮箱统一 `@demo.fx`
 - 过程记录：npm 安装两次遭遇 ECONNRESET（重试参数后成功）；shadcn init 交互预设改为 `-t vite -b radix -p nova` 非交互跑通
 - 没试什么：未做浏览器真机视觉走查与截图（jsdom 无样式渲染）；未验手工篡改 localStorage 后刷新恢复（§12.3 J5 手工项）；未提交 git（用户未要求）；ADR-001..004 尚未同步 docs/decisions.md（待确认）
+
+## M2 领域引擎与 API 契约（2026-10-28 起，按技术设计文档 §13 M2）
+
+Wave 1（三路并行，子 agent 开发）：
+- [x] API 契约层（src/api/ 16 文件、49 POST 端点、包裹/错误码/超时/幂等）→ commit 170b63e
+- [x] 报价引擎 pricing.ts + 35 用例 → commit 2fad19e
+- [x] FIFO 建仓/匹配 + 损益 pnl.ts + 37 用例 → commit 67ddecd
+
+Wave 2（依赖 Wave 1）：
+- [x] ledger.ts 账本重放（9 张收益单/5 币对敞口 §5.4 金样，12 用例）→ commit 6f42ac8
+- [x] 领域服务组 E1：wallet + fx-config + support + customer（42 用例）+ seed TK 计数器根因修复
+- [x] 领域服务组 E2：exchange + close-batch（29 用例；TTL/余额/quoteId 防重/可平金额/重锁价）
+
+集成（Wave 2 完成后）：
+- [x] 跨层集成测试：submit → 1 lot + 1 收益单；平仓 FAILED 零影响；SUCCESS FIFO 归属
+- [x] API 契约补齐 ops-customer 三写端点（49 → 52）
+- [x] 全量门禁：lint 0 问题 / typecheck clean / 279 用例全绿 / build 成功
+- [x] Reverse Sync：§5.4 采集公式与新渠道、§6.2 priceCollectedAt、§6.3 quoteId、
+      §6.5 重试方向校验与敞口入参、§6.7 Ledger 结构、§8.2 错误码口径、§8.4 端点、
+      附录 B 服务签名、附录 D 收益单号、§5.4 EUR 收益金样 ×10 修正
+
+## Review（M2，2026-10-28）
+
+- 已完成：报价引擎（路由降级/10min 新鲜度/限额/50bps 双向）；FIFO 台账与损益（自然对冲 50/50、
+  尾差归更早单、渠道平仓 100% 归属、三态结算）；账本重放（事件流、收益单、五币对敞口）；
+  领域服务 4+2 组（认证/钱包/汇率/客服/客户 + 成交/平仓）；API 契约 52 端点。
+- 证据：`npm run lint` 0 问题；`npm run typecheck` clean；`npx vitest run` 20 文件 279 用例全绿；
+  `npm run build` 成功。金样：EX-1 +0.40 EUR（修正后）、EX-4/5 −197.687 JPY、EX-8/9 +0.20 HKD；
+  敞口 +1700/+6000/+3023.13/−1200/−600；CB-2 FAILED 对账本零影响。
+- 提交：170b63e（API）、2fad19e（报价）、67ddecd（FIFO/损益）、6f42ac8（账本）、
+  E1、E2、集成三笔（见 git log）。
+- 过程：子 agent 并行开发，文件所有权互斥；主控独立复跑每个 agent 的测试与 scoped tsc。
+- 发现的真实缺陷并修根因：seed 工单业务序生成导致 TK 计数器停在更早日期 → 新工单重号；
+  seed 结束回填计数器，并保留服务层防御兼容旧持久化数据。
+- 没试什么：未接 store/selectors/UI（M3/M4）；未启真实后端；未做浏览器真机视觉走查；
+  手工篡改 localStorage 恢复（J5）仍留验收；ADR-001..004 尚未同步 docs/decisions.md（待确认）。

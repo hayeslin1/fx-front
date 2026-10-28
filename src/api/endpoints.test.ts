@@ -447,6 +447,32 @@ const ENDPOINT_CASES: EndpointCase[] = [
     path: '/api/ops/customers/detail',
     body: { customerId: 'C-0001' },
   },
+  {
+    name: 'opsCustomer.createCustomer',
+    invoke: () =>
+      opsCustomerApi.createCustomer({
+        name: '王五',
+        email: 'wangwu@demo.fx',
+        password: 'Demo1234',
+      }),
+    path: '/api/ops/customers/create',
+    body: { name: '王五', email: 'wangwu@demo.fx', password: 'Demo1234' },
+    idempotent: true,
+  },
+  {
+    name: 'opsCustomer.updateCustomer',
+    invoke: () => opsCustomerApi.updateCustomer({ customerId: 'C-0001', name: '张三' }),
+    path: '/api/ops/customers/update',
+    body: { customerId: 'C-0001', name: '张三' },
+  },
+  {
+    name: 'opsCustomer.resetPassword',
+    invoke: () =>
+      opsCustomerApi.resetPassword({ customerId: 'C-0001', newPassword: 'NewDemo123' }),
+    path: '/api/ops/customers/reset-password',
+    body: { customerId: 'C-0001', newPassword: 'NewDemo123' },
+    idempotent: true,
+  },
 
   // ---------- overview.ts ----------
   {
@@ -466,8 +492,8 @@ describe('§8.4 端点契约', () => {
     resetHttp();
   });
 
-  it('端点用例数与映射表一致（49 个）', () => {
-    expect(ENDPOINT_CASES).toHaveLength(49);
+  it('端点用例数与映射表一致（52 个）', () => {
+    expect(ENDPOINT_CASES).toHaveLength(52);
   });
 
   it.each(ENDPOINT_CASES)('$name → $path', async (testCase) => {
