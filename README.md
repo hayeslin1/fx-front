@@ -14,6 +14,14 @@ npm run dev        # http://localhost:5173
 
 SPA 深链（如 `/app/login`、`/ops/overview`）由 Vite history fallback 支持。
 
+## 在线演示
+
+已通过 GitHub Actions 发布到 GitHub Pages：**https://hayeslin1.github.io/fx-front/**
+
+- 触发：push 到 `master` → `.github/workflows/deploy-pages.yml`（`npm ci` → `npm run build` → 发布 `dist/`）
+- 子路径：项目站点挂在 `/fx-front/`，由 `vite.config.ts` 的 `base` 在 CI 环境（`GITHUB_ACTIONS`）自动设置；本地 dev/preview 仍走根路径，互不影响
+- 深链刷新：Pages 是纯静态托管、无 history fallback，构建时复制 `index.html` 为 `404.html` 承载 SPA，再由 `BrowserRouter` 按 pathname 还原路由
+
 ## 演示账号
 
 | 端 | 入口 | 账号 | 密码 |
@@ -92,4 +100,4 @@ src/
 
 - **多标签页不同步**（后写覆盖，last-write-wins）：运营端与客户端请在同一标签页内切换；若开两个标签页，运营端操作后刷新另一标签页即可（技术设计文档 §5.3 / §14）。
 - 数据仅存浏览器 localStorage，无后端、无真实网络请求（`src/api/` 为对接预留契约层）。
-- 非目标：SSR/SSG、PWA、i18n、暗色模式、E2E 框架、CI 流水线。
+- 非目标：SSR/SSG、PWA、i18n、暗色模式、E2E 框架。

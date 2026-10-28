@@ -1,0 +1,63 @@
+# GitHub Pages 自动部署：push 到 master 后构建并发布到
+# https://hayeslin1.github.io/fx-front/
+#
+# 发布前提（仓库设置，非本文件可完成）：
+#   1) 仓库可见性为 public —— Free 计划下 Pages 不支持私有仓库；
+#   2) Settings → Pages → Source 选择 "GitHub Actions"（等价于 API build_type=workflow）。
+#
+# 项目站点子路径 /fx-front/ 由 vite.config.ts 的 base 在 CI 环境下自动设置。
+
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+# 最小权限：读代码 + 写 Pages + OIDC 令牌（actions/deploy-pages 依赖 id-token）
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# 同一时刻只允许一次部署；新的 push 取消进行中的旧部署
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      # 用 npm ci 严格按 package-lock.json 安装（依赖已精确锁版）
+      - run: npm ci
+
+      - run: npm run build
+
+      # Pages 是纯静态托管，不支持 SPA history fallback。
+      # 把 index.html 复制为 404.html：深链（/fx-front/app/login、/fx-front/ops/overview）
+      # 直接访问或刷新时由 404 页承载 SPA，加载后 BrowserRouter 按 pathname 还原路由。
+      - run: cp dist/index.html dist/404.html
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
