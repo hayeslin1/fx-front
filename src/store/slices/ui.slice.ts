@@ -8,10 +8,13 @@ export interface UiState {
   storagePersistent: boolean;
   /** 当前报价（30 秒内存态，不持久化；刷新即失效，需重新取价，PRD §4.1） */
   quote: Quote | null;
+  /** 运营端侧边栏是否折叠（内存态，不持久化——刷新回到展开态） */
+  sidebarCollapsed: boolean;
 }
 
 export const initialUi: UiState = {
   storageRecovered: false,
   storagePersistent: true,
   quote: null,
+  sidebarCollapsed: false,
 };
