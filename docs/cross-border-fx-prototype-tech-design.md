@@ -444,7 +444,7 @@ QuoteResult = { ok: true, quote: Quote } | { ok: false, reason: NoQuoteReason, d
 
 1. 报价存在且 `now() < expiresAt`，否则 `QUOTE_EXPIRED`（提示“报价已过期，请重新取价”，PRD §3.3）。
 2. 来源币钱包余额 `>= sourceAmount`，否则 `INSUFFICIENT_BALANCE`（只提示，不生成订单、不改余额与敞口，PRD §9-6）。
-3. `quoteId` 未使用过（防重复提交；同一报价二次提交直接拒绝）。
+3. `quoteId` 未使用过（防重复提交；同一报价二次提交直接拒绝）。实现口径：成交订单持久化 `quoteId`，以 `state.orders.some(o => o.quoteId === quote.quoteId)` 判重；seed 预置订单无报价来源，字段可缺省。
 
 提交原子效果（单次事务内全部完成，缺一不可）：
 
@@ -498,8 +498,14 @@ QuoteResult = { ok: true, quote: Quote } | { ok: false, reason: NoQuoteReason, d
 
 ```
 buildLedger(facts: { orders: Order[], closeBatches: CloseBatch[] }): Ledger
-Ledger = { lots: OpenLot[], profitOrders: ProfitOrder[], pairExposure: Record<PairId, { netUsd: string, side: 'LONG'|'SHORT'|'FLAT' }>, diagnostics: {...} }
+Ledger = {
+  lots: OpenLot[],                       // 仅剩余 > 0，按 (openedAt, orderId) 排序
+  profitOrders: ProfitOrder[],           // 每笔订单恰好一张（§6.6）
+  pairExposure: { pairId, netUsd, side: 'LONG'|'SHORT'|'FLAT', closeableUsd }[]  // 五币对全量
+}
 ```
+
+说明：`pairExposure` 以**附录 B** 为准（五币对数组、含 `closeableUsd = |netUsd|`）；原稿的 `Record<PairId, …> + diagnostics` 写法已废弃并统一（2026-10-28）。
 
 处理顺序：合并两事实源为事件流（订单成交事件 + 批次成功尝试事件），按 `createdAt` 升序、同刻按 id 字典序；订单事件走 §6.4，成功尝试走 §6.5（失败尝试跳过）。输出被 `store/selectors.ts` 以 `(orders, closeBatches)` 引用为键 memoize（immer 保证变更即新引用），全应用共享唯一 Ledger。**总览指标、敞口、收益单、平仓可平金额一律从 Ledger 读取，禁止另行维护副本。**
 
@@ -1046,6 +1052,7 @@ export interface Order {
   sourceCurrency: Currency; targetCurrency: Currency;
   sourceAmount: DecimalStr; targetAmount: DecimalStr; fee: DecimalStr;
   status: 'COMPLETED';                       // 仅成功成交生成订单
+  quoteId?: string;                          // 成交所用报价 id（防重）；seed 订单缺省
   snapshot: OrderPriceSnapshot; createdAt: number;
 }
 
