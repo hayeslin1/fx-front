@@ -3,6 +3,7 @@ import { NavLink, Outlet } from 'react-router';
 import { toast } from 'sonner';
 import {
   Activity,
+  ArrowLeftRight,
   Calculator,
   CandlestickChart,
   ChevronLeft,
@@ -123,7 +124,7 @@ export function OpsLayout() {
             collapsed ? 'justify-center px-0' : 'px-4',
           )}
         >
-          <Coins className={cn('text-accent-foreground', collapsed ? 'size-5' : 'size-5 shrink-0')} />
+          <ArrowLeftRight className="size-5 shrink-0 text-accent-foreground" />
           {!collapsed && <span className="ml-2 whitespace-nowrap">FX 运营工作台</span>}
         </div>
         <nav className="flex-1 space-y-4 overflow-y-auto p-2">
