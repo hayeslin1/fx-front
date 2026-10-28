@@ -1,15 +1,19 @@
-import { ALL_CURRENCIES, QUOTE_CCY } from '@/domain/constants';
+import dayjs from 'dayjs';
+import { ALL_CURRENCIES, PAIR_IDS, PRICE_FRESH_MS, QUOTE_CCY } from '@/domain/constants';
 import { buildLedger, type Ledger, type PairExposure } from '@/domain/ledger';
-import { D, roundCcy } from '@/domain/money';
+import { D, roundCcy, type Decimal } from '@/domain/money';
 import type {
+  BillType,
   CloseBatch,
   Currency,
   Customer,
   DataState,
   DecimalStr,
+  OpenLot,
   OpsAccount,
   Order,
   PairId,
+  ProfitOrder,
   Ticket,
   TicketMessage,
   Wallet,
@@ -181,4 +185,188 @@ export function getCustomerUsdValuation(data: DataState, customerId: string): Us
     total = total.plus(D(wallet.balance).times(D(mid)));
   }
   return { totalUsd: roundCcy(total, 'USD').toFixed(2), missing };
+}
+
+// ---------- 运营：总览序列（§7.3，筛选仅作用于此处） ----------
+
+export type OverviewRangeType = 'TODAY' | 'LAST_7D' | 'LAST_30D' | 'CUSTOM';
+
+export interface OverviewRange {
+  type: OverviewRangeType;
+  /** CUSTOM 必填；epoch 毫秒，起止含当天（页面负责 end >= start 校验） */
+  dateFrom?: number;
+  dateTo?: number;
+}
+
+export interface OverviewPoint {
+  /** 本地日键 YYYYMMDD（与编号口径一致） */
+  dayKey: string;
+  /** 图表轴标签 MM-DD */
+  label: string;
+  /** 当日成交额（USD 腿合计，2 位） */
+  volumeUsd: DecimalStr;
+  /** 当日成功订单数 */
+  orderCount: number;
+}
+
+export interface OverviewSummary {
+  /** 区间成交额（USD 腿合计，2 位） */
+  volumeUsd: DecimalStr;
+  /** 区间订单数 */
+  orderCount: number;
+  /** 按日趋势（含零成交日，保证图表连续） */
+  series: OverviewPoint[];
+}
+
+/** 解析筛选范围为 [start, end] 毫秒区间（含端点当天） */
+function resolveRange(range: OverviewRange, now: number): { start: number; end: number } {
+  const today = dayjs(now).startOf('day');
+  switch (range.type) {
+    case 'TODAY':
+      return { start: today.valueOf(), end: now };
+    case 'LAST_7D':
+      return { start: today.subtract(6, 'day').valueOf(), end: now };
+    case 'LAST_30D':
+      return { start: today.subtract(29, 'day').valueOf(), end: now };
+    case 'CUSTOM':
+      return { start: range.dateFrom ?? now, end: range.dateTo ?? now };
+  }
+}
+
+/** 订单 USD 腿记账金额：卖 USD 取来源、买 USD 取目标（与账本 §6.4 口径一致） */
+function usdLegOf(order: Order): Decimal {
+  return D(order.direction === 'SELL_USD' ? order.sourceAmount : order.targetAmount);
+}
+
+/**
+ * 总览区间汇总与按日趋势（PRD §5.1）：筛选仅影响成交额/订单数；
+ * 敞口与报价健康为不受筛选影响的当前快照（另行读取）。
+ */
+export function selectOverviewSummary(
+  data: DataState,
+  range: OverviewRange,
+  now: number,
+): OverviewSummary {
+  const { start, end } = resolveRange(range, now);
+  const inRange = data.orders.filter((order) => order.createdAt >= start && order.createdAt <= end);
+
+  const buckets = new Map<string, OverviewPoint>();
+  for (
+    let cursor = dayjs(start).startOf('day');
+    cursor.valueOf() <= end;
+    cursor = cursor.add(1, 'day')
+  ) {
+    const dayKey = cursor.format('YYYYMMDD');
+    buckets.set(dayKey, { dayKey, label: cursor.format('MM-DD'), volumeUsd: '0.00', orderCount: 0 });
+  }
+
+  let total = D('0');
+  for (const order of inRange) {
+    const dayKey = dayjs(order.createdAt).format('YYYYMMDD');
+    const bucket = buckets.get(dayKey);
+    if (bucket === undefined) continue; // 理论上不可达（区间已覆盖）
+    const usd = usdLegOf(order);
+    total = total.plus(usd);
+    bucket.volumeUsd = roundCcy(D(bucket.volumeUsd).plus(usd), 'USD').toFixed(2);
+    bucket.orderCount += 1;
+  }
+
+  return {
+    volumeUsd: roundCcy(total, 'USD').toFixed(2),
+    orderCount: inRange.length,
+    series: [...buckets.values()],
+  };
+}
+
+// ---------- 运营：报价健康（§7.3 / §10.3） ----------
+
+export type QuoteHealthStatus = 'NORMAL' | 'FALLBACK' | 'NO_QUOTE';
+
+export interface QuoteHealthRow {
+  pairId: PairId;
+  status: QuoteHealthStatus;
+  /** 选中渠道（无有效报价时为空） */
+  selectedChannelId?: string;
+  selectedChannelName?: string;
+  /** 选中渠道原始价采集时间（无则空） */
+  collectedAt?: number;
+  /** 剩余新鲜度毫秒（≥0；无有效报价为 0） */
+  remainingMs: number;
+  /** 是否命中非首位渠道（回退） */
+  fallback: boolean;
+}
+
+/**
+ * 各币对报价健康快照（不受总览筛选影响）。
+ * 判定与报价引擎同口径（§6.2 步骤 2）：渠道启用 && 报价启用 && 有价格 && 10min 内；
+ * 命中非首位渠道标记为 FALLBACK，逐渠道全不满足为 NO_QUOTE。
+ */
+export function selectQuoteHealth(data: DataState, now: number): QuoteHealthRow[] {
+  return PAIR_IDS.map((pairId) => {
+    const routingIds = data.fxConfig.routing.find((rule) => rule.pairId === pairId)?.channelIds ?? [];
+    for (const [index, channelId] of routingIds.entries()) {
+      const channel = data.fxConfig.channels.find((item) => item.id === channelId);
+      if (channel === undefined || !channel.enabled) continue;
+
+      // 该渠道该币对最新一条原始价（同采集时间保留先出现者，与报价引擎一致）
+      let latest: { mid: DecimalStr; collectedAt: number; quoteEnabled: boolean } | undefined;
+      for (const price of data.fxConfig.rawPrices) {
+        if (price.pairId !== pairId || price.channelId !== channelId) continue;
+        if (latest === undefined || price.collectedAt > latest.collectedAt) latest = price;
+      }
+      if (latest === undefined || !latest.quoteEnabled) continue;
+      if (now - latest.collectedAt > PRICE_FRESH_MS) continue;
+
+      return {
+        pairId,
+        status: index > 0 ? 'FALLBACK' : 'NORMAL',
+        selectedChannelId: channelId,
+        selectedChannelName: channel.name,
+        collectedAt: latest.collectedAt,
+        remainingMs: Math.max(0, PRICE_FRESH_MS - (now - latest.collectedAt)),
+        fallback: index > 0,
+      };
+    }
+    return { pairId, status: 'NO_QUOTE', remainingMs: 0, fallback: false };
+  });
+}
+
+// ---------- 运营：交易与钱包列表 ----------
+
+export interface ProfitOrderFilter {
+  status?: ProfitOrder['status'];
+  pairId?: PairId;
+}
+
+/** 收益单列表（§7.3）：按收益单号排序保证稳定；筛选状态/币对 */
+export function selectProfitOrders(data: DataState, filter: ProfitOrderFilter = {}): ProfitOrder[] {
+  return selectLedger(data).profitOrders
+    .filter((po) => filter.status === undefined || po.status === filter.status)
+    .filter((po) => filter.pairId === undefined || po.pairId === filter.pairId)
+    .sort((a, b) => a.id.localeCompare(b.id));
+}
+
+/** 某币对未平 lot（敞口页展开明细）：按 FIFO 顺序（openedAt, orderId） */
+export function selectPairLots(data: DataState, pairId: PairId): OpenLot[] {
+  return selectLedger(data)
+    .lots.filter((lot) => lot.pairId === pairId)
+    .sort((a, b) => a.openedAt - b.openedAt || a.orderId.localeCompare(b.orderId));
+}
+
+export interface OpsBillFilter {
+  customerId?: string;
+  type?: BillType;
+  /** epoch 毫秒，含端点 */
+  from?: number;
+  to?: number;
+}
+
+/** 运营账单列表（§10.3 钱包账单页）：客户/类型/日期筛选，时间倒序 */
+export function getOpsBills(data: DataState, filter: OpsBillFilter = {}): WalletBill[] {
+  return data.bills
+    .filter((bill) => filter.customerId === undefined || bill.customerId === filter.customerId)
+    .filter((bill) => filter.type === undefined || bill.type === filter.type)
+    .filter((bill) => filter.from === undefined || bill.createdAt >= filter.from)
+    .filter((bill) => filter.to === undefined || bill.createdAt <= filter.to)
+    .sort((a, b) => b.createdAt - a.createdAt || b.id.localeCompare(a.id));
 }
