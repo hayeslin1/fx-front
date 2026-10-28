@@ -1,6 +1,6 @@
 # fx-front · 跨境汇兑演示平台（前端原型）
 
-**在线演示：https://hayeslin1.github.io/fx-front/**（GitHub Pages，push 到 `master` 自动发布）
+**在线演示：https://hayeslin1.github.io/fx-front/**（GitHub Pages，push 到 `demo` 分支自动发布）
 
 面向个人客户的跨境汇兑高保真交互原型，含**客户端**与**运营端**双端：客户端完成注册/充值/兑换/订单/客服全流程；运营端完成客户/交易/钱包/汇率配置/工单处理。
 
@@ -20,7 +20,8 @@ SPA 深链（如 `/app/login`、`/ops/overview`）由 Vite history fallback 支�
 
 已通过 GitHub Actions 发布到 GitHub Pages：**https://hayeslin1.github.io/fx-front/**
 
-- 触发：push 到 `master` → `.github/workflows/deploy-pages.yml`（`npm ci` → `npm run build` → 发布 `dist/`）
+- 触发：push 到 `demo` 分支 → `.github/workflows/deploy-pages.yml`（`npm ci` → `npm run build` → 发布 `dist/`）
+- 分支策略：`master` 为开发分支（push 不发布）；更新演示执行 `git push origin master:demo`（快进推送，或在 GitHub 上把 master 合入 demo）
 - 子路径：项目站点挂在 `/fx-front/`，由 `vite.config.ts` 的 `base` 在 CI 环境（`GITHUB_ACTIONS`）自动设置；本地 dev/preview 仍走根路径，互不影响
 - 深链刷新：Pages 是纯静态托管、无 history fallback，构建时复制 `index.html` 为 `404.html` 承载 SPA，再由 `BrowserRouter` 按 pathname 还原路由
 

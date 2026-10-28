@@ -1,9 +1,13 @@
-# GitHub Pages 自动部署：push 到 master 后构建并发布到
+# GitHub Pages 自动部署：push 到 demo 分支后构建并发布到
 # https://hayeslin1.github.io/fx-front/
+#
+# 分支策略：master 为开发分支（push 不发布）；demo 为演示分支，唯一发布源。
+# 更新演示：git push origin master:demo（快进推送）或在 GitHub 上把 master 合入 demo。
 #
 # 发布前提（仓库设置，非本文件可完成）：
 #   1) 仓库可见性为 public —— Free 计划下 Pages 不支持私有仓库；
-#   2) Settings → Pages → Source 选择 "GitHub Actions"（等价于 API build_type=workflow）。
+#   2) Settings → Pages → Source 选择 "GitHub Actions"（等价于 API build_type=workflow）；
+#   3) github-pages 环境部署分支白名单包含 demo，否则 deploy job 会被环境策略拒绝。
 #
 # 项目站点子路径 /fx-front/ 由 vite.config.ts 的 base 在 CI 环境下自动设置。
 
@@ -11,7 +15,7 @@ name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: [master]
+    branches: [demo]
   workflow_dispatch:
 
 # 最小权限：读代码 + 写 Pages + OIDC 令牌（actions/deploy-pages 依赖 id-token）
