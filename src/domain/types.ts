@@ -145,6 +145,8 @@ export interface Order {
   fee: DecimalStr;
   /** 原型仅成功成交生成订单（PRD §3.3） */
   status: 'COMPLETED';
+  /** 成交所用报价 id（防重复提交，§6.3 步骤 3）；seed 预置订单无报价来源，缺省 */
+  quoteId?: string;
   snapshot: OrderPriceSnapshot;
   createdAt: number;
 }

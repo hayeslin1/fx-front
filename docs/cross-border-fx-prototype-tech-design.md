@@ -340,7 +340,7 @@ erDiagram
 
 **路由优先级**：USD/EUR、USD/GBP、USD/CNH、USD/HKD 为 `[CH-01, CH-02, CH-03]`；USD/JPY 为 `[CH-02, CH-01, CH-03]`（演示“主渠道非第一位”的回退语义）。
 **加点**：五币对均 50 bps/侧；**币对**：五对全部启用。
-**采集步长序列**（D5，单位 %，循环使用）：`["-0.12", "+0.20", "-0.08", "+0.15"]`，五币对同构不同初始相位；`nextIndex` 持久化于配置。
+**采集步长序列**（D5，单位 %，循环使用）：`["-0.12", "+0.20", "-0.08", "+0.15"]`，五币对同构不同初始相位；`nextIndex` 持久化于配置。采集公式：`mid ← mid × (1 + step/100)`，结果按 12 位有效位落库并刷新 `collectedAt`；单次采集只推进指定币对（可指定渠道），全部采集对每个币对用同一步长推进其全部渠道、`nextIndex` 每币对仅前移一次。新增渠道无初始采集价，须先模拟采集；在此之前该渠道无价，不参与报价与平仓。
 
 **交易事件脚本**（9 笔成功订单，均已完成；“到账”为引擎按 §6.2 公式计算值，此处列出即断言值）
 
@@ -434,7 +434,7 @@ QuoteResult = { ok: true, quote: Quote } | { ok: false, reason: NoQuoteReason, d
    - 服务费恒为 `0`（PRD §4.2）。
 5. **限额**（按原始中间价折算、不计点差，PRD §4.3）：`usdEquivalent = SELL_USD ? sourceAmount : sourceAmount ÷ mid`；要求 `1 <= usdEquivalent <= 10,000`（边界含 1 与 10,000），否则 `BELOW_MIN` / `ABOVE_MAX`。另校验来源金额 > 0 且小数位符合币种精度（输入层同样校验）。
 6. **目标金额**：`SELL_USD`：`targetAmount = roundCcy(sourceAmount × clientRate, 目标币)`；`BUY_USD`：`targetAmount = roundCcy(sourceAmount ÷ clientRate, USD)`。
-7. **生成报价快照** `Quote`：`{ quoteId, pairId, direction, channelId, mid, collectedAt, halfSpreadBps, clientRate, sourceCurrency, sourceAmount, targetCurrency, targetAmount, fee: "0", createdAt: now, expiresAt: now + 30_000 }`。
+7. **生成报价快照** `Quote`：`{ quoteId, pairId, direction, channelId, mid, priceCollectedAt, halfSpreadBps, clientRate, sourceCurrency, sourceAmount, targetCurrency, targetAmount, fee: "0", createdAt: now, expiresAt: now + 30_000 }`（字段名与附录 A 一致：报价内为 `priceCollectedAt`，原始价事实内为 `collectedAt`）。
 
 快照原则（PRD §4.1、§9-5）：报价一旦发出，后续任何配置变更（采集价/路由/加点/渠道停用）均不影响该报价；**成交提交时也不重新取价/重验配置**，只校验过期与余额（§6.3）。`quoteId` 单次有效。
 
@@ -484,7 +484,7 @@ QuoteResult = { ok: true, quote: Quote } | { ok: false, reason: NoQuoteReason, d
 
 **失败**（提交前由运营显式选择“模拟成功/失败”，PRD §5.3）：仅记录尝试，敞口与收益金额不变，重新计算可平金额不变。
 
-**重试**：失败批次“整批重试”生成**新尝试**（`attemptIndex + 1`），弹窗预填原批次参数（币对/金额/渠道），渠道与价格**必须重新校验并重新锁定**（原渠道失效时强制改选）；每次尝试显式选择模拟结果。审计字段（批次与每次尝试均记录，PRD §5.3）：币对、方向、USD 名义金额、渠道、锁定原始执行价及来源时间、创建/执行时间、结果/失败原因、关联客户订单分配明细、收益影响。
+**重试**：失败批次“整批重试”生成**新尝试**（`attemptIndex + 1`），弹窗预填原批次参数（币对/金额/渠道），渠道与价格**必须重新校验并重新锁定**（原渠道失效时强制改选）；每次尝试显式选择模拟结果。重试时若该币对净敞口方向已翻转（原批次方向不再与净敞口相反），拒绝并返回 `EXPOSURE_SIDE_CHANGED`，避免批次审计方向与重放冲减方向不一致。审计字段（批次与每次尝试均记录，PRD §5.3）：币对、方向、USD 名义金额、渠道、锁定原始执行价及来源时间、创建/执行时间、结果/失败原因、关联客户订单分配明细、收益影响。实现口径：服务层不直接依赖 `ledger.ts`，提交/重试入参携带当前敞口快照 `{ netUsd, side }`（由 store 传入 `buildLedger` 最新结果），保持领域服务与派生引擎解耦、可单测。
 
 ### 6.6 收益订单与结算（`domain/pnl.ts` + `ledger.ts`）
 
@@ -589,6 +589,7 @@ react-hook-form + zod（`@hookform/resolvers`）：注册、充值、代客充�
 | 金额精度 | 后端 BigDecimal 序列化为普通十进制字符串（`WRITE_BIGDECIMAL_AS_PLAIN`），禁止浮点/科学计数法 |
 | 端隔离 | `/api/ops/**` 仅运营身份可访问；客户身份访问返回 403xx（对应 PRD §2） |
 | 错误码 | 分段建议：400xx 参数、401xx 认证、403xx 权限、409xx 状态冲突（报价过期/余额不足/工单已关闭/超可平金额）、5xxxx 系统；前端 `api/errors.ts` 维护 code→中文文案与处理策略（提示/跳登录/刷新） |
+| 错误码口径 | 领域服务返回**字符串业务码**（如 `QUOTE_EXPIRED`/`INSUFFICIENT_BALANCE`/`QUOTE_DUPLICATE`/`CLOSE_AMOUNT_EXCEEDED`/`PRICE_STALE`…）为本地真值；`errors.ts` 的数值码是联调提议映射，后端定稿后集中对齐，UI 统一经 `resolveError` 消费 |
 
 ### 8.3 http.ts 封装（实现要点）
 
@@ -700,8 +701,8 @@ export async function request<TReq extends object, TResp>(path: string, body: TR
 | `orderDetail` | POST /api/ops/trading/orders/detail | {orderId} | {order,lots,bills,profitOrder} | selectLedger | |
 | `exposureQuery` | POST /api/ops/trading/exposure/query | {} | {pairs[],lots[]} | selectPairExposure | |
 | `closeBatchesQuery` | POST /api/ops/trading/close-batches/query | {pairId?,status?,page,pageSize} | Page<CloseBatch> | | |
-| `closeBatchCreate` | POST /api/ops/trading/close-batches/create | {pairId,usdAmount,channelId,simulatedResult,requestId ✔} | CloseBatch | closeBatchService.submit | simulatedResult 为演示字段，对接期替换（§8.6） |
-| `closeBatchRetry` | POST /api/ops/trading/close-batches/retry | {batchId,pairId,usdAmount,channelId,simulatedResult,requestId ✔} | CloseBatch | closeBatchService.retry | |
+| `closeBatchCreate` | POST /api/ops/trading/close-batches/create | {pairId,usdAmount,channelId,simulatedResult,requestId ✔} | CloseBatch | closeBatchService.createBatch | 本地调用传入 buildLedger 敞口快照；simulatedResult 为演示字段，对接期替换（§8.6） |
+| `closeBatchRetry` | POST /api/ops/trading/close-batches/retry | {batchId,pairId,usdAmount,channelId,simulatedResult,requestId ✔} | CloseBatch | closeBatchService.retry | 重新校验可平金额/渠道新鲜度并重新锁价 |
 | `closeBatchDetail` | POST /api/ops/trading/close-batches/detail | {batchId} | {batch,attempts,allocations} | | |
 | `profitOrdersQuery` | POST /api/ops/trading/profit-orders/query | {pairId?,status?,page,pageSize} | Page<ProfitOrder+客户摘要> | selectProfitOrders | |
 | `profitOrderDetail` | POST /api/ops/trading/profit-orders/detail | {profitOrderId} | ProfitOrder（含 allocations） | selectProfitOrders | |
@@ -720,6 +721,9 @@ export async function request<TReq extends object, TResp>(path: string, body: TR
 |---|---|---|---|---|---|
 | `customersQuery` | POST /api/ops/customers/query | {keyword?,page,pageSize} | Page<Customer+余额+USD估值> | | |
 | `customerDetail` | POST /api/ops/customers/detail | {customerId} | {customer,wallets,recentOrders} | | |
+| `createCustomer` | POST /api/ops/customers/create | {name,email,password,requestId ✔} | Customer | customerService.createCustomer | 运营建户；邮箱忽略大小写判重；演示级哈希 |
+| `updateCustomer` | POST /api/ops/customers/update | {customerId,name?,email?} | Customer | customerService.updateCustomer | 邮箱判重口径同上 |
+| `resetPassword` | POST /api/ops/customers/reset-password | {customerId,newPassword,requestId ✔} | {customerId} | customerService.resetPassword | 演示级 SHA-256(salt:password) |
 
 **overview.ts**（运营总览）
 
@@ -1135,13 +1139,17 @@ export interface Ledger { lots: OpenLot[]; profitOrders: ProfitOrder[]; pairExpo
 // domain/services/*.ts（统一返回 Result；失败零写入）
 export type Result<T> = { ok: true; next: DataState; data: T } | { ok: false; code: string; message: string };
 authService:      register(input) / loginClient(email, password) / loginOps(email, password) / logout(kind)
-customerService:  touchLastLogin(customerId)
+customerService:  touchLastLogin(customerId) / createCustomer(operatorId, {name,email,password})
+                  / updateCustomer(operatorId, customerId, {name?,email?}) / resetPassword(operatorId, customerId, newPassword)
 walletService:    selfTopUp(customerId, currency, amount) / opsTopUp(operatorId, customerId, currency, amount, remark)
 exchangeService:  submit(customerId, quote)                      // 校验见 §6.3
-closeBatchService: submit(operatorId, draft, simulatedResult) / retry(operatorId, batchId, draft, simulatedResult)
-fxConfigService:  upsertChannel / toggleChannel / togglePair / collect(pairId, channelId) / collectAll
+closeBatchService: createBatch({pairId, usdAmount, channelId, simulatedResult, failReason?, exposure})
+                  / retry(batchId, {channelId, simulatedResult, failReason?, exposure})
+                  // exposure={netUsd,side} 由 store 传 buildLedger 快照，服务层不 import ledger
+fxConfigService:  upsertChannel(operatorId, …) / toggleChannel / togglePair / collect(operatorId, pairId, channelId) / collectAll(operatorId)
                   / toggleQuoteEnabled / saveRouting(pairId, channelIds) / saveMarkup(pairId, halfSpreadBps)
-supportService:   createTicket / reply / assign / setStatus / close
+supportService:   createTicket(customerId, {subject,content,relatedOrderId?}) / customerReply / opsReply
+                  / assign(operatorId, ticketId, assigneeId) / setStatus / close
 seedService:      build(now: number) / reset()
 // 注：后端对接预留的 API 契约层（src/api/*）与上述服务 1:1 对齐，端点清单见 §8.4。
 ```
