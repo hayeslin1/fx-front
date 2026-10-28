@@ -120,6 +120,7 @@ export function WalletPage() {
         </CardHeader>
         <CardContent>
           <DataTable
+            ariaLabel="六币种余额"
             columns={WALLET_COLUMNS}
             rows={wallets}
             rowKey={(wallet) => wallet.currency}
@@ -155,6 +156,7 @@ export function WalletPage() {
         </CardHeader>
         <CardContent>
           <DataTable
+            ariaLabel="资金流水"
             columns={BILL_COLUMNS}
             rows={bills}
             rowKey={(bill) => bill.id}

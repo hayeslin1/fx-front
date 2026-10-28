@@ -41,12 +41,18 @@ export function ExposurePage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>币对</TableHead>
-              <TableHead>方向</TableHead>
-              <TableHead className="text-right">净敞口</TableHead>
-              <TableHead className="text-right">对应外币估值</TableHead>
-              <TableHead className="text-right">可平金额</TableHead>
-              <TableHead>来源订单</TableHead>
+              <TableHead scope="col">币对</TableHead>
+              <TableHead scope="col">方向</TableHead>
+              <TableHead scope="col" className="text-right">
+                净敞口
+              </TableHead>
+              <TableHead scope="col" className="text-right">
+                对应外币估值
+              </TableHead>
+              <TableHead scope="col" className="text-right">
+                可平金额
+              </TableHead>
+              <TableHead scope="col">来源订单</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -125,10 +131,14 @@ function LotDetails({ row }: { row: ExposureRow }) {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>订单号</TableHead>
-              <TableHead>方向</TableHead>
-              <TableHead className="text-right">剩余 USD</TableHead>
-              <TableHead className="text-right">建仓 mid</TableHead>
+              <TableHead scope="col">订单号</TableHead>
+              <TableHead scope="col">方向</TableHead>
+              <TableHead scope="col" className="text-right">
+                剩余 USD
+              </TableHead>
+              <TableHead scope="col" className="text-right">
+                建仓 mid
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

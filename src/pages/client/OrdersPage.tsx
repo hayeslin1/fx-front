@@ -21,7 +21,15 @@ export function OrdersPage() {
     {
       key: 'id',
       header: '订单号',
-      cell: (order) => <span className="font-mono text-xs">{order.id}</span>,
+      // 订单号列同时是可键盘聚焦的链接（验收 12：表格键盘可用），行点击仅作鼠标快捷方式
+      cell: (order) => (
+        <Link
+          to={`/app/orders/${order.id}`}
+          className="font-mono text-xs text-foreground hover:text-primary hover:underline"
+        >
+          {order.id}
+        </Link>
+      ),
     },
     {
       key: 'createdAt',

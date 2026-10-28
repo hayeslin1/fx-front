@@ -25,22 +25,35 @@ interface DataTableProps<T> {
   rowKey: (row: T) => string;
   empty?: ReactNode;
   onRowClick?: (row: T) => void;
+  /**
+   * 表格可访问名称（设计文档 §11.2）：一页多表时用 aria-label 区分用途，便于读屏与测试定位。
+   * 可选，不传则不渲染该属性（不影响既有渲染与样式）。
+   */
+  ariaLabel?: string;
 }
 
 const ALIGN_CLASS = { left: 'text-left', right: 'text-right', center: 'text-center' } as const;
 
-export function DataTable<T>({ columns, rows, rowKey, empty, onRowClick }: DataTableProps<T>) {
+export function DataTable<T>({
+  columns,
+  rows,
+  rowKey,
+  empty,
+  onRowClick,
+  ariaLabel,
+}: DataTableProps<T>) {
   if (rows.length === 0 && empty !== undefined) {
     return <>{empty}</>;
   }
   return (
     <div className="overflow-x-auto rounded-lg border bg-card">
-      <Table>
+      <Table aria-label={ariaLabel}>
         <TableHeader>
           <TableRow>
             {columns.map((col) => (
               <TableHead
                 key={col.key}
+                scope="col"
                 className={cn(ALIGN_CLASS[col.align ?? 'left'], col.className)}
               >
                 {col.header}

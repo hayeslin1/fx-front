@@ -1,6 +1,8 @@
 import { NavLink, Outlet } from 'react-router';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { SkipLink } from '@/components/common/SkipLink';
+import { MAIN_CONTENT_ID } from '@/components/common/main-content-id';
 import { cn } from '@/lib/utils';
 import { logoutClient, useAppStore } from '@/store';
 import { getCustomerById } from '@/store/selectors';
@@ -21,6 +23,8 @@ export function ClientLayout() {
 
   return (
     <div className="theme-client flex min-h-svh flex-col bg-background text-foreground">
+      {/* 键盘首焦点：跳过顶栏导航直达 main（tabIndex=-1 保证跨浏览器片段导航后焦点落到地标） */}
+      <SkipLink />
       <header className="sticky top-0 z-10 border-b bg-card/85 backdrop-blur">
         <div className="mx-auto flex h-14 w-full max-w-5xl items-center gap-6 px-4">
           <NavLink to="/app/home" className="text-base font-semibold tracking-tight">
@@ -55,7 +59,11 @@ export function ClientLayout() {
           </div>
         </div>
       </header>
-      <main className="mx-auto w-full max-w-5xl flex-1 space-y-6 px-4 py-6">
+      <main
+        id={MAIN_CONTENT_ID}
+        tabIndex={-1}
+        className="mx-auto w-full max-w-5xl flex-1 space-y-6 px-4 py-6 outline-none"
+      >
         <Outlet />
       </main>
     </div>

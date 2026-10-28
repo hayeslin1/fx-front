@@ -96,4 +96,35 @@
   body {
     @apply bg-background text-foreground antialiased;
   }
+  /* 键盘焦点环兜底（设计文档 §11.2）：shadcn 控件自带 focus-visible:ring 且 outline-none
+     （utilities 层优先级更高，不受影响），此处为原生可聚焦元素（链接、native input/select 等）补最小焦点环 */
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+  /* 「跳到主要内容」跳转链接：静默态 fixed + 移出视口（不占位、不产生滚动条），
+     键盘聚焦时回到左上角浮层显示；两端壳共用（src/components/common/SkipLink.tsx） */
+  .skip-link {
+    position: fixed;
+    top: 0.75rem;
+    left: -9999px;
+    z-index: 60;
+    padding: 0.5rem 0.875rem;
+    border: 1px solid var(--border);
+    border-radius: calc(var(--radius) - 2px);
+    background: var(--card);
+    color: var(--card-foreground);
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    box-shadow: 0 4px 12px rgb(0 0 0 / 10%);
+  }
+  .skip-link:focus,
+  .skip-link:focus-visible {
+    left: 0.75rem;
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
 }

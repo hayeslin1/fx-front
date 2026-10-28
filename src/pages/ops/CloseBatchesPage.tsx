@@ -155,16 +155,20 @@ export function CloseBatchesPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>批次号</TableHead>
-              <TableHead>币对</TableHead>
-              <TableHead>方向</TableHead>
-              <TableHead className="text-right">金额</TableHead>
-              <TableHead>渠道</TableHead>
-              <TableHead>状态</TableHead>
-              <TableHead className="text-right">尝试次数</TableHead>
-              <TableHead>创建时间</TableHead>
-              <TableHead>失败原因</TableHead>
-              <TableHead>操作</TableHead>
+              <TableHead scope="col">批次号</TableHead>
+              <TableHead scope="col">币对</TableHead>
+              <TableHead scope="col">方向</TableHead>
+              <TableHead scope="col" className="text-right">
+                金额
+              </TableHead>
+              <TableHead scope="col">渠道</TableHead>
+              <TableHead scope="col">状态</TableHead>
+              <TableHead scope="col" className="text-right">
+                尝试次数
+              </TableHead>
+              <TableHead scope="col">创建时间</TableHead>
+              <TableHead scope="col">失败原因</TableHead>
+              <TableHead scope="col">操作</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -499,13 +503,15 @@ function BatchDetails({ view }: { view: CloseBatchView }) {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>序号</TableHead>
-                <TableHead>渠道</TableHead>
-                <TableHead className="text-right">锁定 mid</TableHead>
-                <TableHead>采集时间</TableHead>
-                <TableHead>结果</TableHead>
-                <TableHead>失败原因</TableHead>
-                <TableHead>执行时间</TableHead>
+                <TableHead scope="col">序号</TableHead>
+                <TableHead scope="col">渠道</TableHead>
+                <TableHead scope="col" className="text-right">
+                  锁定 mid
+                </TableHead>
+                <TableHead scope="col">采集时间</TableHead>
+                <TableHead scope="col">结果</TableHead>
+                <TableHead scope="col">失败原因</TableHead>
+                <TableHead scope="col">执行时间</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -544,14 +550,24 @@ function BatchDetails({ view }: { view: CloseBatchView }) {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>尝试</TableHead>
-                  <TableHead>归属收益单</TableHead>
-                  <TableHead>来源</TableHead>
-                  <TableHead className="text-right">归属 USD</TableHead>
-                  <TableHead className="text-right">建仓价</TableHead>
-                  <TableHead className="text-right">平仓价</TableHead>
-                  <TableHead className="text-right">损益</TableHead>
-                  <TableHead className="text-right">分摊</TableHead>
+                  <TableHead scope="col">尝试</TableHead>
+                  <TableHead scope="col">归属收益单</TableHead>
+                  <TableHead scope="col">来源</TableHead>
+                  <TableHead scope="col" className="text-right">
+                    归属 USD
+                  </TableHead>
+                  <TableHead scope="col" className="text-right">
+                    建仓价
+                  </TableHead>
+                  <TableHead scope="col" className="text-right">
+                    平仓价
+                  </TableHead>
+                  <TableHead scope="col" className="text-right">
+                    损益
+                  </TableHead>
+                  <TableHead scope="col" className="text-right">
+                    分摊
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

@@ -78,6 +78,7 @@ export function FxPairsPage() {
             type="checkbox"
             role="switch"
             aria-label={`${row.pair.id} 启停开关`}
+            aria-checked={row.pair.enabled}
             className="peer sr-only"
             disabled={commands.pending}
             checked={row.pair.enabled}

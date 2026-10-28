@@ -96,8 +96,7 @@ const QUOTE_COLUMNS: DataTableColumn<QuoteHealthRow>[] = [
   {
     key: 'channel',
     header: '选中渠道',
-    cell: (row) =>
-      row.selectedChannelName ?? <span className="text-muted-foreground">—</span>,
+    cell: (row) => row.selectedChannelName ?? <span className="text-muted-foreground">—</span>,
   },
   {
     key: 'collectedAt',
@@ -304,6 +303,7 @@ export function OverviewPage() {
                 id="overview-date-to"
                 type="date"
                 className="w-36"
+                aria-label="自定义区间结束日期"
                 value={customTo}
                 aria-invalid={customError !== null}
                 aria-describedby={customError === null ? undefined : 'overview-custom-error'}
@@ -417,7 +417,8 @@ export function OverviewPage() {
                 rowKey={(row) => row.dayKey}
               />
               <p className="text-xs text-muted-foreground">
-                区间合计：<Money value={summary.volumeUsd} currency="USD" />
+                区间合计：
+                <Money value={summary.volumeUsd} currency="USD" />
                 {` · ${summary.orderCount} 笔`}
               </p>
             </div>

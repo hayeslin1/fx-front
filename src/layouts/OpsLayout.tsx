@@ -3,6 +3,8 @@ import { NavLink, Outlet } from 'react-router';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
+import { SkipLink } from '@/components/common/SkipLink';
+import { MAIN_CONTENT_ID } from '@/components/common/main-content-id';
 import { cn } from '@/lib/utils';
 import { logoutOps, resetDemoData, useAppStore } from '@/store';
 import { getOpsAccountById } from '@/store/selectors';
@@ -61,6 +63,8 @@ export function OpsLayout() {
 
   return (
     <div className="theme-ops flex min-h-svh bg-background text-foreground">
+      {/* 键盘首焦点：跳过六组侧栏导航直达 main（.skip-link 为 fixed 定位，不参与首层 flex 布局） */}
+      <SkipLink />
       <aside className="flex w-56 shrink-0 flex-col border-r bg-card">
         <div className="flex h-14 items-center border-b px-4 text-sm font-semibold tracking-tight">
           FX 运营工作台
@@ -105,7 +109,11 @@ export function OpsLayout() {
             退出
           </Button>
         </header>
-        <main className="flex-1 space-y-6 p-4 lg:p-6">
+        <main
+          id={MAIN_CONTENT_ID}
+          tabIndex={-1}
+          className="flex-1 space-y-6 p-4 outline-none lg:p-6"
+        >
           <Outlet />
         </main>
       </div>
