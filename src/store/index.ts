@@ -2,7 +2,14 @@ import { create } from 'zustand';
 import { now } from '@/lib/clock';
 import { buildSeed } from '@/domain/seed';
 import { authCommands, type RegisterInput } from '@/domain/services/auth.service';
-import type { Customer, DataState, DomainCommand, DomainResult, OpsAccount } from '@/domain/types';
+import type {
+  Customer,
+  DataState,
+  DomainCommand,
+  DomainResult,
+  OpsAccount,
+  Quote,
+} from '@/domain/types';
 import {
   createBrowserAdapter,
   createMemoryAdapter,
@@ -52,7 +59,7 @@ export async function bootstrapStore(): Promise<void> {
     useAppStore.setState({
       session: loaded.payload.session,
       data: loaded.payload.data,
-      ui: { storageRecovered: false, storagePersistent },
+      ui: { ...initialUi, storageRecovered: false, storagePersistent },
     });
   } else {
     const seeded = await buildSeed(now());
@@ -61,7 +68,7 @@ export async function bootstrapStore(): Promise<void> {
       session: initialSession,
       data: seeded,
       // 首次打开（empty）不提示；损坏/版本不兼容才提示已恢复（PRD §9-11）
-      ui: { storageRecovered: loaded.reason !== 'empty', storagePersistent },
+      ui: { ...initialUi, storageRecovered: loaded.reason !== 'empty', storagePersistent },
     });
   }
 
@@ -128,6 +135,16 @@ export function logoutClient(): void {
 
 export function logoutOps(): void {
   useAppStore.setState({ session: { ...useAppStore.getState().session, ops: null } });
+}
+
+/** 缓存当前报价（仅内存态；不触发落盘，刷新即失效） */
+export function setQuote(quote: Quote): void {
+  useAppStore.setState({ ui: { ...useAppStore.getState().ui, quote } });
+}
+
+/** 清空当前报价（成交成功/过期/离开兑换页） */
+export function clearQuote(): void {
+  useAppStore.setState({ ui: { ...useAppStore.getState().ui, quote: null } });
 }
 
 /** 关闭“已恢复预置数据”提示（仅 UI 态，不触发落盘） */
