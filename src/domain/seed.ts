@@ -309,6 +309,22 @@ export async function buildSeed(anchor: number): Promise<DataState> {
     });
   }
 
+  // SEED_TICKETS 按文档业务序生成（TK-001 待处理…），而 offsetMs 并非时间序；
+  // nextId 只记住“最后一次调用”的日期，会让 TK 计数器停在更早日期——
+  // 之后新工单对今天从 seq=1 起编号，会与预置的 TK-…-0001 重号。
+  // 这里把计数器回填为既有编号中 (day, seq) 最大者，与 nextId“当日递增”语义对齐。
+  const tkMax = tickets.reduce(
+    (max, ticket) => {
+      const match = /^TK-(\d{8})-(\d+)$/.exec(ticket.id);
+      if (!match) return max;
+      const day = match[1] ?? '';
+      const seq = Number(match[2] ?? '0');
+      return day > max.day || (day === max.day && seq > max.seq) ? { day, seq } : max;
+    },
+    { day: '', seq: 0 },
+  );
+  counters = { ...counters, TK: tkMax };
+
   // ---------- 汇率运营配置 ----------
   const channels = SEED_CHANNELS.map((spec) => ({ ...spec, createdAt: anchor - 7 * DAY }));
   const rawPrices: RawPrice[] = [];

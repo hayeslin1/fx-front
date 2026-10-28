@@ -1,4 +1,5 @@
 import { beforeAll, describe, expect, it } from 'vitest';
+import { nextId } from './ids';
 import { D } from './money';
 import { buildSeed } from './seed';
 import type { DataState } from './types';
@@ -133,5 +134,13 @@ describe('汇率运营配置', () => {
       expect(price.collectedAt).toBe(ANCHOR - 120_000);
       expect(price.quoteEnabled).toBe(true);
     }
+  });
+});
+
+describe('编号计数器与既有事实一致（防新单重号）', () => {
+  it('TK 计数器回填到既有最大值：新工单为当日 -0002，不与预置重号', () => {
+    const { id } = nextId(state.counters, 'TK', ANCHOR);
+    expect(state.tickets.some((t) => t.id === id)).toBe(false);
+    expect(id).toBe('TK-20261028-0002');
   });
 });
