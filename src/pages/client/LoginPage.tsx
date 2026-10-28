@@ -55,7 +55,7 @@ export function LoginPage() {
 
   return (
     <div className="space-y-4">
-      <Card>
+      <Card className="mx-auto max-w-md">
         <CardHeader>
           <CardTitle>登录</CardTitle>
           <CardDescription>使用演示账号，或注册新账号体验完整流程</CardDescription>
@@ -103,7 +103,7 @@ export function LoginPage() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="mx-auto max-w-md">
         <CardHeader>
           <CardTitle className="text-sm">演示账号（仅演示数据）</CardTitle>
           <CardDescription>点击「填入」自动填写登录表单</CardDescription>

@@ -83,6 +83,7 @@ export function OrdersPage() {
 
       <DataTable
         ariaLabel="订单列表"
+        stickyFirstColumn
         columns={columns}
         rows={orders}
         rowKey={(order) => order.id}

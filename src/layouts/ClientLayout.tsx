@@ -30,14 +30,14 @@ export function ClientLayout() {
           <NavLink to="/app/home" className="text-base font-semibold tracking-tight">
             跨境汇兑
           </NavLink>
-          <nav className="flex items-center gap-1 text-sm">
+          <nav className="flex items-center gap-1 text-sm overflow-x-auto whitespace-nowrap scrollbar-hide">
             {NAV_ITEMS.map((item) => (
               <NavLink
                 key={item.to}
                 to={item.to}
                 className={({ isActive }) =>
                   cn(
-                    'rounded-full px-3 py-1.5 transition-colors',
+                    'shrink-0 rounded-full px-3 py-1.5 transition-colors',
                     isActive
                       ? 'bg-accent font-medium text-accent-foreground'
                       : 'text-muted-foreground hover:bg-muted hover:text-foreground',
@@ -49,10 +49,10 @@ export function ClientLayout() {
             ))}
           </nav>
           <div className="ml-auto flex items-center gap-3">
-            <Badge variant="outline" className="border-emerald-200 bg-emerald-50 text-emerald-700">
+            <Badge variant="outline" className="hidden border-success bg-success-bg text-success lg:inline-flex">
               演示资金
             </Badge>
-            <span className="text-sm text-muted-foreground">{customer?.name}</span>
+            <span className="hidden text-sm text-muted-foreground lg:inline">{customer?.name}</span>
             <Button variant="ghost" size="sm" onClick={logoutClient}>
               退出
             </Button>
