@@ -160,7 +160,7 @@ export function OpsLayout() {
             </div>
           ))}
         </nav>
-        <div className="border-t p-2 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+        <div className="border-t p-2">
           <Button
             variant="ghost"
             size="icon"
