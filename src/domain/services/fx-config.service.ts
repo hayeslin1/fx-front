@@ -44,6 +44,20 @@ function pairExists(state: DataState, pairId: PairId): boolean {
   return state.fxConfig.pairs.some((p) => p.id === pairId);
 }
 
+/**
+ * 该币对最新一条原始价（collectedAt 最新，并列取先出现者）。
+ * WHY：新增渠道首采无自价可步进，以该币对既有最新价为基准应用步长（§5.4），
+ * 与 D6 估值取“最近一次采集价”的口径一致。
+ */
+function latestPairPrice(state: DataState, pairId: PairId): RawPrice | undefined {
+  let latest: RawPrice | undefined;
+  for (const price of state.fxConfig.rawPrices) {
+    if (price.pairId !== pairId) continue;
+    if (latest === undefined || price.collectedAt > latest.collectedAt) latest = price;
+  }
+  return latest;
+}
+
 /** 取步长序列当前值；步长是百分比字符串（如 "-0.12" 表示 -0.12%） */
 function stepAt(seq: CollectStepSeq): ReturnType<typeof D> | null {
   const raw = seq.steps[seq.nextIndex];
@@ -332,17 +346,24 @@ export const fxConfigCommands = {
           (r) => r.pairId === pairId && r.channelId === channelId,
         );
         const existing = state.fxConfig.rawPrices[priceIndex];
-        if (!existing) {
-          return fail('PRICE_NOT_FOUND', '该渠道暂无采集价');
+        // 首采基准（§5.4）：渠道无既有价（新增渠道）时以该币对最新一条原始价为基准；
+        // 整对无任何价格则无可采基准，拒绝且零变更
+        const baseMid = (existing ?? latestPairPrice(state, pairId))?.mid;
+        if (baseMid === undefined) {
+          return fail('PRICE_NOT_FOUND', '该币对暂无可采集基准价');
         }
 
         const rawPrice: RawPrice = {
-          ...existing,
-          mid: applyStep(existing.mid, pct),
+          pairId,
+          channelId,
+          mid: applyStep(baseMid, pct),
           collectedAt: ctx.now,
+          // 首采价默认可报价；既有行推进仅刷新行情，开关维持原值
+          quoteEnabled: existing?.quoteEnabled ?? true,
         };
         const rawPrices = [...state.fxConfig.rawPrices];
-        rawPrices[priceIndex] = rawPrice;
+        if (priceIndex >= 0) rawPrices[priceIndex] = rawPrice;
+        else rawPrices.push(rawPrice);
         const collectSteps = state.fxConfig.collectSteps.map((s, index) =>
           index === seqIndex ? { ...s, nextIndex: nextIndexAfter(s) } : s,
         );
@@ -373,11 +394,14 @@ export const fxConfigCommands = {
 
         const stepByPair = new Map<PairId, ReturnType<typeof D>>();
         const nextIndexByPair = new Map<PairId, number>();
+        const baseMidByPair = new Map<PairId, string>();
         for (const seq of state.fxConfig.collectSteps) {
           const pct = stepAt(seq);
           if (pct === null) continue;
           stepByPair.set(seq.pairId, pct);
           nextIndexByPair.set(seq.pairId, nextIndexAfter(seq));
+          const base = latestPairPrice(state, seq.pairId);
+          if (base !== undefined) baseMidByPair.set(seq.pairId, base.mid);
         }
 
         const rawPrices = state.fxConfig.rawPrices.map((price) => {
@@ -385,6 +409,22 @@ export const fxConfigCommands = {
           if (!pct) return price;
           return { ...price, mid: applyStep(price.mid, pct), collectedAt: ctx.now };
         });
+
+        // 补齐无价渠道首采（§5.4）：与已有渠道同一步长，基准为采集前该币对最新一条原始价
+        for (const channel of state.fxConfig.channels) {
+          for (const [pairId, pct] of stepByPair) {
+            const baseMid = baseMidByPair.get(pairId);
+            if (baseMid === undefined) continue;
+            if (rawPrices.some((r) => r.pairId === pairId && r.channelId === channel.id)) continue;
+            rawPrices.push({
+              pairId,
+              channelId: channel.id,
+              mid: applyStep(baseMid, pct),
+              collectedAt: ctx.now,
+              quoteEnabled: true,
+            });
+          }
+        }
         const collectSteps = state.fxConfig.collectSteps.map((seq) => {
           const nextIndex = nextIndexByPair.get(seq.pairId);
           return nextIndex === undefined ? seq : { ...seq, nextIndex };

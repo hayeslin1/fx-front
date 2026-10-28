@@ -32,6 +32,17 @@ function expectedMid(mid: string, step: string): string {
   return toRateSig12(D(mid).mul(D(1).plus(D(step).div(100)))).toString();
 }
 
+/** 规格基准（§5.4）：该币对采集前最新一条原始价（collectedAt 最新，并列取先出现者） */
+function latestBaseOf(s: DataState, pairId: PairId): string {
+  let latest: RawPrice | undefined;
+  for (const price of s.fxConfig.rawPrices) {
+    if (price.pairId !== pairId) continue;
+    if (latest === undefined || price.collectedAt > latest.collectedAt) latest = price;
+  }
+  if (latest === undefined) throw new Error(`no base price for ${pairId}`);
+  return latest.mid;
+}
+
 describe('销售渠道维护', () => {
   it('新增渠道：生成 CH 编号、createdAt=now，并追加到各币对路由末尾', async () => {
     const result = await fxConfigCommands
@@ -286,21 +297,55 @@ describe('模拟采集', () => {
     expect(result.next.fxConfig.rawPrices).toHaveLength(state.fxConfig.rawPrices.length);
   });
 
-  it('采集失败（无价/缺步长）拒绝且零变更', async () => {
+  it('新增渠道首采：以该币对采集前最新原始价为基准应用步长，开关默认为开', async () => {
     const created = await fxConfigCommands
-      .upsertChannel('OPS-001', { name: '无价渠道', enabled: true })
+      .upsertChannel('OPS-001', { name: '新渠道', enabled: true })
       .run(state, { now: NOW });
     expect(created.ok).toBe(true);
     if (!created.ok) return;
+    const channelId = created.data.channel.id;
 
-    const beforeCreatedJson = stateJson(created.next);
-    const noPrice = await fxConfigCommands
-      .collect('OPS-001', 'USD/EUR', created.data.channel.id)
+    const first = await fxConfigCommands
+      .collect('OPS-001', 'USD/EUR', channelId)
       .run(created.next, { now: NOW });
-    expect(noPrice.ok).toBe(false);
-    if (!noPrice.ok) expect(noPrice.code).toBe('PRICE_NOT_FOUND');
-    expect(stateJson(created.next)).toBe(beforeCreatedJson);
+    expect(first.ok).toBe(true);
+    if (!first.ok) return;
+    const price = rawPriceOf(first.next, 'USD/EUR', channelId);
+    expect(price.mid).toBe(expectedMid(latestBaseOf(created.next, 'USD/EUR'), '-0.12'));
+    expect(price.collectedAt).toBe(NOW);
+    expect(price.quoteEnabled).toBe(true);
 
+    // 第二次采集从该渠道自价继续步进（游标已前移至 +0.20）
+    const second = await fxConfigCommands
+      .collect('OPS-001', 'USD/EUR', channelId)
+      .run(first.next, { now: NOW + 1 });
+    expect(second.ok).toBe(true);
+    if (!second.ok) return;
+    expect(rawPriceOf(second.next, 'USD/EUR', channelId).mid).toBe(expectedMid(price.mid, '+0.20'));
+  });
+
+  it('全部采集补齐无价渠道：新渠道五个币对均获首价且时间同步', async () => {
+    const created = await fxConfigCommands
+      .upsertChannel('OPS-001', { name: '新渠道', enabled: true })
+      .run(state, { now: NOW });
+    expect(created.ok).toBe(true);
+    if (!created.ok) return;
+    const channelId = created.data.channel.id;
+    const beforeCount = created.next.fxConfig.rawPrices.length;
+
+    const result = await fxConfigCommands.collectAll('OPS-001').run(created.next, { now: NOW });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.next.fxConfig.rawPrices).toHaveLength(beforeCount + state.fxConfig.pairs.length);
+    for (const pair of state.fxConfig.pairs) {
+      const price = rawPriceOf(result.next, pair.id, channelId);
+      expect(price.mid).toBe(expectedMid(latestBaseOf(created.next, pair.id), '-0.12'));
+      expect(price.collectedAt).toBe(NOW);
+      expect(price.quoteEnabled).toBe(true);
+    }
+  });
+
+  it('采集失败（缺步长/整对无价）拒绝且零变更', async () => {
     const corrupted: DataState = {
       ...state,
       fxConfig: {
@@ -315,6 +360,22 @@ describe('模拟采集', () => {
     expect(noSteps.ok).toBe(false);
     if (!noSteps.ok) expect(noSteps.code).toBe('COLLECT_STEPS_MISSING');
     expect(stateJson(corrupted)).toBe(beforeCorruptedJson);
+
+    // 整对无任何渠道价格：首采也无可采基准（§5.4），拒绝且零变更
+    const noPrices: DataState = {
+      ...state,
+      fxConfig: {
+        ...state.fxConfig,
+        rawPrices: state.fxConfig.rawPrices.filter((r) => r.pairId !== 'USD/EUR'),
+      },
+    };
+    const beforeNoPricesJson = stateJson(noPrices);
+    const noBase = await fxConfigCommands
+      .collect('OPS-001', 'USD/EUR', 'CH-01')
+      .run(noPrices, { now: NOW });
+    expect(noBase.ok).toBe(false);
+    if (!noBase.ok) expect(noBase.code).toBe('PRICE_NOT_FOUND');
+    expect(stateJson(noPrices)).toBe(beforeNoPricesJson);
   });
 });
 
