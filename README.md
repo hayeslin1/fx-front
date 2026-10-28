@@ -1,6 +1,8 @@
 # fx-front · 跨境汇兑演示平台（前端原型）
 
-**在线演示：https://hayeslin1.github.io/fx-front/**（GitHub Pages，push 到 `demo` 分支自动发布）
+**在线演示：https://hayeslin1.github.io/fx-front
+
+（GitHub Pages，push 到 `demo` 分支自动发布）
 
 面向个人客户的跨境汇兑高保真交互原型，含**客户端**与**运营端**双端：客户端完成注册/充值/兑换/订单/客服全流程；运营端完成客户/交易/钱包/汇率配置/工单处理。
 
