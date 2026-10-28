@@ -1,10 +1,22 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
 
+/* 字体（P0-1）：正文 Inter（tabular-nums 支持好、数字列对齐专业），
+   标题 Fraunces（衬线 display，金融科技反默认选择——避开无脑 sans 的模板感）。
+   通过 @fontsource 本地打包，无外部请求。 */
+@import '@fontsource/inter/400.css';
+@import '@fontsource/inter/500.css';
+@import '@fontsource/inter/600.css';
+@import '@fontsource/fraunces/500.css';
+@import '@fontsource/fraunces/600.css';
+
 /* 暗色仅随 .dark class（本项目不启用暗色，此声明用于中和组件内的 dark: 类，避免跟随系统偏好） */
 @custom-variant dark (&:is(.dark *));
 
-/* 设计令牌（设计文档 §11.1）：:root 缺省 = 客户端暖色；theme-ops 覆写为运营灰底高密度 */
+/* 设计令牌（设计文档 §11.1）：:root 缺省 = 客户端暖色；theme-ops 覆写为运营灰底高密度。
+   P0-3：主色 #2b855e（白字 4.55:1 达标）、次文字 #6b6358（5.58:1）、输入边框 #c2b9a8（3.0+:1）。
+   注：卡片装饰性边框（--border）保持浅色——WCAG 2.1 仅要求「表单控件边界」达 3:1，
+   装饰性分隔线不强制，过深会破坏暖色轻质感。 */
 :root,
 .theme-client {
   --background: #faf8f4; /* 暖白 */
@@ -13,25 +25,40 @@
   --card-foreground: #2b2621;
   --popover: #ffffff;
   --popover-foreground: #2b2621;
-  --primary: #3ba776; /* 柔和绿 */
+  --primary: #2b855e; /* 柔和绿（P0-3：白字 4.55:1） */
   --primary-foreground: #ffffff;
+  /* 链接/accent 文字色：比 primary 更深，保证在暖白底 ≥4.5:1（P0-3） */
+  --link: #267554;
   --secondary: #f1ede6;
   --secondary-foreground: #2b2621;
   --muted: #f1ede6;
-  --muted-foreground: #8a8177;
+  --muted-foreground: #6b6358; /* P0-3：5.58:1 达 AA */
   --accent: #e8f5ee; /* 强调浅底 */
   --accent-foreground: #1f7a52;
   --destructive: #dc2626;
   --destructive-foreground: #ffffff;
-  --border: #efe9e0;
-  --input: #efe9e0;
-  --ring: #3ba776;
+  --border: #efe9e0; /* 装饰性分隔线，不强制 3:1 */
+  --input: #c2b9a8; /* 表单控件边界，3.0+:1（P0-3） */
+  --ring: #2b855e;
   --radius: 0.875rem; /* 14px 软圆角 */
-  --chart-1: #3ba776;
+  --chart-1: #2b855e;
   --chart-2: #d97706;
   --chart-3: #2563eb;
   --chart-4: #8a8177;
   --chart-5: #dc2626;
+  /* P1-5：语义色令牌（成功/警示/危险/信息），替代散落裸色值 */
+  --success: #2f9e68;
+  --success-foreground: #ffffff;
+  --success-bg: #e8f5ee;
+  --warning: #d97706;
+  --warning-foreground: #ffffff;
+  --warning-bg: #fef3c7;
+  --danger: #dc2626;
+  --danger-foreground: #ffffff;
+  --danger-bg: #fee2e2;
+  --info: #2563eb;
+  --info-foreground: #ffffff;
+  --info-bg: #dbeafe;
 }
 
 .theme-ops {
@@ -41,20 +68,33 @@
   --card-foreground: #111827;
   --popover: #ffffff;
   --popover-foreground: #111827;
-  --primary: #3ba776; /* 品牌绿保持一致 */
+  --primary: #2b855e; /* 品牌绿保持一致（P0-3：白字 4.55:1） */
   --primary-foreground: #ffffff;
+  --link: #267554;
   --secondary: #eef0f3;
   --secondary-foreground: #111827;
   --muted: #eef0f3;
-  --muted-foreground: #6b7280;
+  --muted-foreground: #635e55; /* P0-3：5.90:1 达 AA */
   --accent: #e8f5ee;
   --accent-foreground: #1f7a52;
   --destructive: #dc2626;
   --destructive-foreground: #ffffff;
   --border: #e5e7eb;
-  --input: #e5e7eb;
-  --ring: #3ba776;
+  --input: #cbd0d6; /* P0-3：表单控件边界 3.0+:1 */
+  --ring: #2b855e;
   --radius: 0.5rem; /* 8px 高密度圆角 */
+  --success: #2f9e68;
+  --success-foreground: #ffffff;
+  --success-bg: #e8f5ee;
+  --warning: #d97706;
+  --warning-foreground: #ffffff;
+  --warning-bg: #fef3c7;
+  --danger: #dc2626;
+  --danger-foreground: #ffffff;
+  --danger-bg: #fee2e2;
+  --info: #2563eb;
+  --info-foreground: #ffffff;
+  --info-bg: #dbeafe;
 }
 
 /* shadcn 语义 token → Tailwind 工具类映射（inline：保留 var() 引用，使主题覆写实时生效） */
@@ -87,20 +127,57 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+
+  /* 字体角色（P0-1）：sans=正文/数据；display=标题（Fraunces 衬线，金融科技反默认） */
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'Fraunces', ui-serif, Georgia, serif;
+
+  /* P1-5：语义色令牌映射到 Tailwind 工具类，替代裸色值 */
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-success-bg: var(--success-bg);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-warning-bg: var(--warning-bg);
+  --color-danger: var(--danger);
+  --color-danger-foreground: var(--danger-foreground);
+  --color-danger-bg: var(--danger-bg);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
+  --color-info-bg: var(--info-bg);
+  --color-link: var(--link);
 }
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
+  /* 字体角色落到元素（P0-1）：标题用 display 衬线，正文用 Inter */
+  h1, h2, h3, h4 {
+    font-family: var(--font-display);
+  }
   body {
     @apply bg-background text-foreground antialiased;
+    font-family: var(--font-sans);
+    font-feature-settings: 'tnum' 1; /* 全局等宽数字，金额/汇率列对齐 */
   }
   /* 键盘焦点环兜底（设计文档 §11.2）：shadcn 控件自带 focus-visible:ring 且 outline-none
      （utilities 层优先级更高，不受影响），此处为原生可聚焦元素（链接、native input/select 等）补最小焦点环 */
   :focus-visible {
     outline: 2px solid var(--ring);
     outline-offset: 2px;
+  }
+}
+
+/* P0-2：尊重用户动效偏好——tw-animate-css 的卡片进出场动画对动效敏感用户豁免 */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
 

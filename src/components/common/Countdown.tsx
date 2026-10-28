@@ -48,7 +48,7 @@ export function Countdown({ expiresAt, onExpire, warnSeconds = 5, className }: C
       aria-live="polite"
       className={cn(
         'tabular-nums text-sm',
-        expired ? 'text-muted-foreground' : urgent ? 'font-semibold text-rose-600' : 'text-amber-700',
+        expired ? 'text-muted-foreground' : urgent ? 'font-semibold text-danger' : 'text-warning',
         className,
       )}
     >

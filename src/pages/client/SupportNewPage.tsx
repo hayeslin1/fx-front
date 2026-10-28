@@ -87,7 +87,7 @@ export function SupportNewPage() {
                 {...register('subject')}
               />
               {formState.errors.subject ? (
-                <p className="text-xs text-rose-600">{formState.errors.subject.message}</p>
+                <p className="text-xs text-danger">{formState.errors.subject.message}</p>
               ) : null}
             </div>
 
@@ -102,7 +102,7 @@ export function SupportNewPage() {
                 {...register('content')}
               />
               {formState.errors.content ? (
-                <p className="text-xs text-rose-600">{formState.errors.content.message}</p>
+                <p className="text-xs text-danger">{formState.errors.content.message}</p>
               ) : null}
             </div>
 
@@ -127,7 +127,7 @@ export function SupportNewPage() {
             </div>
 
             {serverError ? (
-              <p className="text-xs text-rose-600" role="alert">
+              <p className="text-xs text-danger" role="alert">
                 {serverError}
               </p>
             ) : null}

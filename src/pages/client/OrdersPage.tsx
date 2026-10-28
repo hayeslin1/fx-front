@@ -38,8 +38,15 @@ export function OrdersPage() {
         <span className="text-muted-foreground">{formatDateTime(order.createdAt)}</span>
       ),
     },
-    { key: 'pair', header: '币对', cell: (order) => order.pairId },
-    { key: 'direction', header: '方向', cell: (order) => DIRECTION_LABELS[order.direction] },
+    {
+      key: 'pair',
+      header: '币对 / 方向',
+      cell: (order) => (
+        <span className="whitespace-nowrap">
+          {order.pairId} · {DIRECTION_LABELS[order.direction]}
+        </span>
+      ),
+    },
     {
       key: 'sourceAmount',
       header: '来源金额',
@@ -75,6 +82,7 @@ export function OrdersPage() {
       <PageHeader title="订单" description="当前客户的兑换订单（成交时间倒序）" />
 
       <DataTable
+        ariaLabel="订单列表"
         columns={columns}
         rows={orders}
         rowKey={(order) => order.id}

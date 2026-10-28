@@ -36,8 +36,8 @@ export function resolvePoolValidity(
 }
 
 export const POOL_VALIDITY_META: Record<PoolValidity, { label: string; className: string }> = {
-  FRESH: { label: '有效', className: 'border-emerald-200 bg-emerald-50 text-emerald-700' },
-  STALE: { label: '已过期', className: 'border-amber-200 bg-amber-50 text-amber-700' },
+  FRESH: { label: '有效', className: 'border-success bg-success-bg text-success' },
+  STALE: { label: '已过期', className: 'border-warning bg-warning-bg text-warning' },
   CHANNEL_DISABLED: { label: '渠道停用', className: 'border-zinc-200 bg-zinc-50 text-zinc-600' },
   NO_PRICE: { label: '暂无采集价', className: 'border-zinc-200 bg-zinc-50 text-zinc-600' },
 };

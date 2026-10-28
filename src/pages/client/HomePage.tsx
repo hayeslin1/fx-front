@@ -81,7 +81,7 @@ export function HomePage() {
             <Money value={valuation.totalUsd} currency="USD" />
           </p>
           {valuation.missing.length > 0 ? (
-            <p className="text-xs text-amber-700">
+            <p className="text-xs text-warning">
               有 {valuation.missing.length} 种币种暂缺参考价，未计入估值
             </p>
           ) : null}

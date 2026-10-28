@@ -18,7 +18,7 @@ export function PlaceholderPage({ title, milestone, description }: PlaceholderPa
       <Construction className="size-10 text-muted-foreground" />
       <div className="flex items-center gap-2">
         <h1 className="text-lg font-semibold">{title}</h1>
-        <Badge variant="outline" className="border-amber-200 bg-amber-50 text-amber-700">
+        <Badge variant="outline" className="border-warning bg-warning-bg text-warning">
           待实现 · {milestone}
         </Badge>
       </div>

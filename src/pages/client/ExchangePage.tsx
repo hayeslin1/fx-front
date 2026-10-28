@@ -167,6 +167,9 @@ export function ExchangePage() {
                     </option>
                   ))}
                 </select>
+                {sourceCurrency !== 'USD' ? (
+                  <p className="text-xs text-muted-foreground">外币→仅支持兑换为 USD，不支持外币间交叉兑换</p>
+                ) : null}
               </div>
             </div>
 
@@ -187,7 +190,7 @@ export function ExchangePage() {
                 onChange={(event) => handleAmountChange(event.target.value)}
                 aria-invalid={amountError !== null}
               />
-              {amountError !== null ? <p className="text-xs text-rose-600">{amountError}</p> : null}
+              {amountError !== null ? <p className="text-xs text-danger">{amountError}</p> : null}
               <p className="text-xs text-muted-foreground">
                 可用余额：
                 {sourceWallet !== undefined ? (
@@ -278,9 +281,9 @@ export function ExchangePage() {
               </CardContent>
             </Card>
           ) : failure !== null ? (
-            <Card className="border-rose-200">
+            <Card className="border-danger">
               <CardHeader>
-                <CardTitle className="text-rose-700">无法获取报价</CardTitle>
+                <CardTitle className="text-danger">无法获取报价</CardTitle>
                 <CardDescription>{NO_QUOTE_REASON_LABELS[failure.reason]}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-2 text-sm">
