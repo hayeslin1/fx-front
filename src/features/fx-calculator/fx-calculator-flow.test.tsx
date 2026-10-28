@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { webcrypto } from 'node:crypto';
@@ -175,7 +175,9 @@ describe('汇率运营-报价计算器', () => {
 
     const cfg = useAppStore.getState().data.fxConfig;
     expect(cfg.channels.find((c) => c.id === 'CH-01')?.enabled).toBe(false);
-    const ch02Mid = cfg.rawPrices.find((r) => r.pairId === 'USD/EUR' && r.channelId === 'CH-02')?.mid;
+    const ch02Mid = cfg.rawPrices.find(
+      (r) => r.pairId === 'USD/EUR' && r.channelId === 'CH-02',
+    )?.mid;
     expect(ch02Mid).toBeDefined();
     expect(D(ch02Mid ?? '0').eq('0.9205')).toBe(true);
 
@@ -202,7 +204,9 @@ describe('汇率运营-报价计算器', () => {
     // 恢复币对，制造“无有效报价”：CH-01 渠道停用、CH-02 报价开关停用、CH-03 预置即停用
     await applyCommand(fxConfigCommands.togglePair(opsSpec().id, 'USD/EUR', true));
     await applyCommand(fxConfigCommands.toggleChannel(opsSpec().id, 'CH-01', false));
-    await applyCommand(fxConfigCommands.toggleQuoteEnabled(opsSpec().id, 'USD/EUR', 'CH-02', false));
+    await applyCommand(
+      fxConfigCommands.toggleQuoteEnabled(opsSpec().id, 'USD/EUR', 'CH-02', false),
+    );
 
     expect(html()).toContain('暂无有效报价');
     expect(html()).toContain('逐渠道诊断');
@@ -275,5 +279,35 @@ describe('汇率运营-报价计算器', () => {
     expect(after.ui.quote).toBeNull(); // 未产生锁价（30 秒内存态报价保持空）
 
     useAppStore.setState({ apply: originalApply });
+  });
+
+  it('结果随时间自动失效：停留超过 10 分钟后同一输入转为「采集价已过期」（§10.3）', async () => {
+    // 只替换定时器（setInterval/clearInterval），不 fake setTimeout/microtask——
+    // 且必须在 mount 之前启用，组件才会注册到被替换的定时器上
+    vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] });
+    try {
+      await loginAsOps();
+      await mount();
+      await fill('#calc-amount', '2000.00');
+
+      // 初始：seed 采集价为 NOW-2min，处于 10 分钟新鲜度内 → 试算成功
+      expect(html()).toContain('华星清算');
+      expect(html()).not.toContain('采集价已过期');
+
+      // 模拟页面停留：时钟推进 11 分钟后触发一次新鲜度重算
+      setClock(() => NOW + 11 * 60_000);
+      await act(async () => {
+        vi.advanceTimersByTime(30_000);
+        await new Promise((resolve) => setTimeout(resolve, 0));
+      });
+
+      // 同一输入不再返回成功试算，而是给出逐渠道中文原因（与客户端取价判定 §6.2 一致）
+      expect(html()).toContain('暂无有效报价');
+      expect(html()).toContain('采集价已过期（超过 10 分钟）');
+      expect(html()).not.toContain('1,830.80 EUR'); // 成功试算的到账金额已消失
+      expect(html()).not.toContain('客户成交价'); // 成功态字段标签不再渲染
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
