@@ -43,8 +43,8 @@ describe('nextCustomerId（C-0001 全局递增）', () => {
   });
 });
 
-describe('deriveProfitOrderId（EX → PO 1:1）', () => {
-  it('替换前缀', () => {
-    expect(deriveProfitOrderId('EX-20261028-0002')).toBe('PO-20261028-0002');
+describe('deriveProfitOrderId（EX → PO-EX 1:1）', () => {
+  it('在完整订单号前加 PO- 前缀（§6.6 / §5.4 金样口径）', () => {
+    expect(deriveProfitOrderId('EX-20261028-0002')).toBe('PO-EX-20261028-0002');
   });
 });

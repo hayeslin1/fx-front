@@ -28,7 +28,11 @@ export function nextCustomerId(counters: Counters): NextIdResult {
   };
 }
 
-/** 收益单号：由客户订单号派生 EX-… → PO-…（1:1 且重放幂等） */
+/**
+ * 收益单号：由客户订单号派生 EX-… → PO-EX-…（1:1 且重放幂等）。
+ * WHY 用 `PO-` + 完整订单号而非去掉 `EX-`：§6.6 示例与 §5.4 收益单金样均为
+ * `PO-EX-…`，保留原单号也便于运营按前缀直接反查客户订单。
+ */
 export function deriveProfitOrderId(orderId: string): string {
-  return orderId.replace(/^EX/, 'PO');
+  return `PO-${orderId}`;
 }
