@@ -10,7 +10,11 @@ import { Money } from '@/components/common/Money';
 import { PageHeader } from '@/components/common/PageHeader';
 import { ALL_CURRENCIES } from '@/domain/constants';
 import type { Currency, Wallet, WalletBill } from '@/domain/types';
-import { BILL_TYPE_LABELS, CURRENCY_LABELS } from '@/features/wallet/labels';
+import {
+  BILL_TYPE_LABELS,
+  CURRENCY_ACCOUNT_LABELS,
+  CURRENCY_LABELS,
+} from '@/features/wallet/labels';
 import { useWalletBills, useWalletOverview } from '@/features/wallet/hooks';
 import { formatDateTime } from '@/lib/format';
 
@@ -19,7 +23,9 @@ const WALLET_COLUMNS: DataTableColumn<Wallet>[] = [
   {
     key: 'currency',
     header: '币种',
-    cell: (wallet) => <span className="font-medium">{CURRENCY_LABELS[wallet.currency]}</span>,
+    cell: (wallet) => (
+      <span className="font-medium">{CURRENCY_ACCOUNT_LABELS[wallet.currency]}</span>
+    ),
   },
   {
     key: 'balance',

@@ -74,8 +74,11 @@ describe('M3 客户端主链路渲染', () => {
     const html = await mount('/app/wallet');
     expect(html).toContain('20,500.00');
     expect(html).toContain('8,203.15');
+    // 币种余额表币种列：旗帜 + 中文名（§10.2）
+    expect(html).toContain('🇺🇸 美元');
+    expect(html).toContain('🇪🇺 欧元');
+    // 流水币种筛选下拉仍用带 ISO 代码的口径（CURRENCY_LABELS）
     expect(html).toContain('美元 USD');
-    expect(html).toContain('欧元 EUR');
     expect(html).toContain('资金流水');
     expect(html).toContain('初始演示资金');
   });
@@ -127,9 +130,7 @@ describe('M3 客户端主链路渲染', () => {
 
   it('客服列表与详情展示本人工单及消息时间线', async () => {
     await loginSeedCustomer();
-    const ticket = useAppStore
-      .getState()
-      .data.tickets.find((item) => item.customerId === 'C-001');
+    const ticket = useAppStore.getState().data.tickets.find((item) => item.customerId === 'C-001');
     expect(ticket).toBeDefined();
     if (!ticket) return;
 

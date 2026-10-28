@@ -90,6 +90,11 @@ describe('登录后渲染（金样出数）', () => {
     expect(html).toContain('20,500.00 USD');
     expect(html).toContain('8,203.15 EUR');
     expect(html).toContain('参考估值');
+    // 估值金额前置货币符号 $（符号对读屏隐藏，金额与币种代码仍由 Money 输出，§10.2）
+    expect(html).toContain('aria-hidden="true">$</span>');
+    // 六币种余额卡币种展示：旗帜 + 中文名
+    expect(html).toContain('🇺🇸 美元');
+    expect(html).toContain('🇨🇳 离岸人民币');
   });
 
   it('客户会话访问 /ops/overview → 重定向到运营登录（双端身份隔离）', async () => {

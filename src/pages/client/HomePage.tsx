@@ -9,7 +9,7 @@ import { Money } from '@/components/common/Money';
 import { PageHeader } from '@/components/common/PageHeader';
 import type { Currency } from '@/domain/types';
 import { DIRECTION_LABELS } from '@/features/exchange/labels';
-import { BILL_TYPE_LABELS } from '@/features/wallet/labels';
+import { BILL_TYPE_LABELS, CURRENCY_ACCOUNT_LABELS } from '@/features/wallet/labels';
 import { formatDateTime } from '@/lib/format';
 import { useAppStore } from '@/store';
 import { getCustomerById, getCustomerUsdValuation, getCustomerWallets } from '@/store/selectors';
@@ -75,6 +75,9 @@ export function HomePage() {
         <CardContent className="space-y-1 p-6">
           <p className="text-sm text-muted-foreground">资产参考估值（按最新中间价折算）</p>
           <p className="text-3xl font-semibold tracking-tight">
+            {/* 估值统一折算为 USD：前置货币符号 $（设计文档 §10.2）。
+                符号对读屏隐藏，避免与 Money 输出的币种代码重复播报。 */}
+            <span aria-hidden="true">$</span>
             <Money value={valuation.totalUsd} currency="USD" />
           </p>
           {valuation.missing.length > 0 ? (
@@ -90,7 +93,9 @@ export function HomePage() {
           <Card key={wallet.currency}>
             <CardContent className="flex items-center justify-between gap-2 p-4">
               <div className="space-y-1">
-                <p className="text-xs text-muted-foreground">{wallet.currency}</p>
+                <p className="text-xs text-muted-foreground">
+                  {CURRENCY_ACCOUNT_LABELS[wallet.currency]}
+                </p>
                 <Money
                   value={wallet.balance}
                   currency={wallet.currency}
