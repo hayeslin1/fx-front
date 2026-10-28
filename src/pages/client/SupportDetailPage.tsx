@@ -146,7 +146,7 @@ export function SupportDetailPage() {
                   <div
                     className={cn(
                       'max-w-[85%] space-y-1 rounded-xl border px-3 py-2',
-                      fromCustomer ? 'border-emerald-100 bg-emerald-50' : 'border-border bg-muted/60',
+                      fromCustomer ? 'border-success bg-success-bg' : 'border-border bg-muted/60',
                     )}
                   >
                     <div
@@ -176,7 +176,7 @@ export function SupportDetailPage() {
         </CardHeader>
         <CardContent>
           {closed ? (
-            <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+            <p className="rounded-lg border border-warning bg-warning-bg px-3 py-2 text-sm text-warning">
               工单已关闭，如有新问题请新建工单
             </p>
           ) : (
@@ -192,7 +192,7 @@ export function SupportDetailPage() {
                 className={FIELD_CLASS}
               />
               {serverError ? (
-                <p className="text-xs text-rose-600" role="alert">
+                <p className="text-xs text-danger" role="alert">
                   {serverError}
                 </p>
               ) : null}

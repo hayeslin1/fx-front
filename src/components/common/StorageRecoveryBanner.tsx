@@ -16,14 +16,14 @@ export function StorageRecoveryBanner() {
       {ui.storageRecovered ? (
         <div
           role="status"
-          className="flex items-center gap-2 border-b border-amber-200 bg-amber-50 px-4 py-2 text-sm text-amber-800"
+          className="flex items-center gap-2 border-b border-warning bg-warning-bg px-4 py-2 text-sm text-warning"
         >
           <AlertTriangle className="size-4 shrink-0" />
           <span className="flex-1">检测到本地数据损坏或版本不兼容，已重置为预置演示数据。</span>
           <Button
             variant="ghost"
             size="icon"
-            className="size-6 text-amber-800"
+            className="size-6 text-warning"
             onClick={dismissStorageRecovered}
             aria-label="关闭提示"
           >
@@ -34,7 +34,7 @@ export function StorageRecoveryBanner() {
       {!ui.storagePersistent ? (
         <div
           role="status"
-          className="flex items-center gap-2 border-b border-rose-200 bg-rose-50 px-4 py-2 text-sm text-rose-800"
+          className="flex items-center gap-2 border-b border-danger bg-danger-bg px-4 py-2 text-sm text-danger"
         >
           <HardDrive className="size-4 shrink-0" />
           <span className="flex-1">

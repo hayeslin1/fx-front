@@ -138,7 +138,7 @@ export function TopUpPage() {
                 {...register('amount', { onChange: () => setReceipt(null) })}
               />
               {formState.errors.amount ? (
-                <p className="text-xs text-rose-600">{formState.errors.amount.message}</p>
+                <p className="text-xs text-danger">{formState.errors.amount.message}</p>
               ) : (
                 <p className="text-xs text-muted-foreground">
                   {dp === 0 ? '该币种金额须为整数' : `最多保留 ${dp} 位小数`}
@@ -148,7 +148,7 @@ export function TopUpPage() {
             </div>
 
             {formState.errors.root ? (
-              <p className="text-xs text-rose-600">{formState.errors.root.message}</p>
+              <p className="text-xs text-danger">{formState.errors.root.message}</p>
             ) : null}
 
             <Button type="submit" className="w-full" disabled={pending}>
@@ -157,7 +157,7 @@ export function TopUpPage() {
           </form>
 
           {receipt ? (
-            <div className="space-y-2 rounded-lg border border-emerald-200 bg-emerald-50/60 px-3 py-3 text-sm text-emerald-800">
+            <div className="space-y-2 rounded-lg border border-success bg-success-bg/60 px-3 py-3 text-sm text-success">
               <p className="font-medium">充值成功</p>
               <p>
                 本次到账 <Money value={receipt.amount} currency={receipt.currency} />

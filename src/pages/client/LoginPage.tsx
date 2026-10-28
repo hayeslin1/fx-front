@@ -72,7 +72,7 @@ export function LoginPage() {
                 {...register('email')}
               />
               {formState.errors.email ? (
-                <p className="text-xs text-rose-600">{formState.errors.email.message}</p>
+                <p className="text-xs text-danger">{formState.errors.email.message}</p>
               ) : null}
             </div>
             <div className="space-y-2">
@@ -84,11 +84,11 @@ export function LoginPage() {
                 {...register('password')}
               />
               {formState.errors.password ? (
-                <p className="text-xs text-rose-600">{formState.errors.password.message}</p>
+                <p className="text-xs text-danger">{formState.errors.password.message}</p>
               ) : null}
             </div>
             {formState.errors.root ? (
-              <p className="text-xs text-rose-600">{formState.errors.root.message}</p>
+              <p className="text-xs text-danger">{formState.errors.root.message}</p>
             ) : null}
             <Button type="submit" className="w-full" disabled={submitting}>
               {submitting ? '登录中…' : '登录'}

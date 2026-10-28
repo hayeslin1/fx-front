@@ -18,7 +18,7 @@ export function Money({ value, currency, signed = false, className }: MoneyProps
     <span
       className={cn(
         'tabular-nums whitespace-nowrap',
-        signed && (negative ? 'text-rose-600' : 'text-emerald-600'),
+        signed && (negative ? 'text-danger' : 'text-success'),
         className,
       )}
     >

@@ -154,6 +154,7 @@ export function OrderDetailPage() {
         </CardHeader>
         <CardContent>
           <DataTable
+            ariaLabel="关联钱包流水"
             columns={billColumns}
             rows={bills}
             rowKey={(bill) => bill.id}
