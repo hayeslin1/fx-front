@@ -87,3 +87,26 @@ Wave 2（依赖 Wave 1）：
   seed 结束回填计数器，并保留服务层防御兼容旧持久化数据。
 - 没试什么：未接 store/selectors/UI（M3/M4）；未启真实后端；未做浏览器真机视觉走查；
   手工篡改 localStorage 恢复（J5）仍留验收；ADR-001..004 尚未同步 docs/decisions.md（待确认）。
+
+## M3 客户端全流程（2026-10-28 起，按技术设计文档 §13 M3）
+
+- [x] 共享底座：ledger memoized 选择器 / 客户列表读取 / D6 USD 估值 / 报价内存态 /
+      Countdown / Rate / DemoNotice → commit 285d686
+- [x] P1 注册 + 钱包 + 充值（features/wallet hooks，11 用例）→ commit 44b4498
+- [x] P2 兑换 + 订单列表 + 订单详情（features/exchange/orders hooks，5 个 jsdom 流程用例）→ commit af7ca0e
+- [x] P3 客服列表 + 新建 + 详情（features/support hooks，4 个 jsdom 流程用例）→ commit 7cfd19a
+- [x] 跨页 J1 冒烟（m3-client-flow.test.tsx，5 用例）：注册页/钱包金样/充值后余额/
+      成交后订单快照/工单时间线
+- [x] 全量门禁：lint 0 问题 / typecheck clean / 24 文件 304 用例全绿 / build 成功
+
+## Review（M3，2026-10-28）
+
+- 已完成：客户端 11 页全部脱离占位（登录/首页 M1 已有 + 注册/钱包/充值/兑换/订单/订单详情/
+  客服列表/新建/详情）；store 读写全部收敛到 features/*/hooks（页面零 useAppStore 引用）；
+  兑换 10 向推导、报价快照展示与 30s 倒计时、过期禁用、quoteId 防重；客户侧不展示平台损益。
+- 证据：`npm run lint` 0 问题；`npm run typecheck` clean；`npx vitest run` 24 文件 304 用例
+  全绿；`npm run build` 成功。J1 跨页冒烟断言：钱包 20,500.00/8,203.15 → 充值后 20,600.00；
+  成交订单详情含客户成交价/原始中间价/华星清算；工单详情含消息时间线。
+- 已知取舍：项目无 shadcn Select/Textarea，页面用原生控件套既有令牌（未改 ui 目录）。
+- 没试什么：未做浏览器真机视觉与键盘走查（J1/J2 手工项留验收）；倒计时到点的 DOM 计时器
+  交互未单测（逻辑为 Countdown onExpire + 提交前 now 双判定）；未启真实后端。
