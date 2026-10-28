@@ -1,0 +1,99 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+
+/* 暗色仅随 .dark class（本项目不启用暗色，此声明用于中和组件内的 dark: 类，避免跟随系统偏好） */
+@custom-variant dark (&:is(.dark *));
+
+/* 设计令牌（设计文档 §11.1）：:root 缺省 = 客户端暖色；theme-ops 覆写为运营灰底高密度 */
+:root,
+.theme-client {
+  --background: #faf8f4; /* 暖白 */
+  --foreground: #2b2621;
+  --card: #ffffff;
+  --card-foreground: #2b2621;
+  --popover: #ffffff;
+  --popover-foreground: #2b2621;
+  --primary: #3ba776; /* 柔和绿 */
+  --primary-foreground: #ffffff;
+  --secondary: #f1ede6;
+  --secondary-foreground: #2b2621;
+  --muted: #f1ede6;
+  --muted-foreground: #8a8177;
+  --accent: #e8f5ee; /* 强调浅底 */
+  --accent-foreground: #1f7a52;
+  --destructive: #dc2626;
+  --destructive-foreground: #ffffff;
+  --border: #efe9e0;
+  --input: #efe9e0;
+  --ring: #3ba776;
+  --radius: 0.875rem; /* 14px 软圆角 */
+  --chart-1: #3ba776;
+  --chart-2: #d97706;
+  --chart-3: #2563eb;
+  --chart-4: #8a8177;
+  --chart-5: #dc2626;
+}
+
+.theme-ops {
+  --background: #f4f5f7; /* 浅灰 */
+  --foreground: #111827;
+  --card: #ffffff;
+  --card-foreground: #111827;
+  --popover: #ffffff;
+  --popover-foreground: #111827;
+  --primary: #3ba776; /* 品牌绿保持一致 */
+  --primary-foreground: #ffffff;
+  --secondary: #eef0f3;
+  --secondary-foreground: #111827;
+  --muted: #eef0f3;
+  --muted-foreground: #6b7280;
+  --accent: #e8f5ee;
+  --accent-foreground: #1f7a52;
+  --destructive: #dc2626;
+  --destructive-foreground: #ffffff;
+  --border: #e5e7eb;
+  --input: #e5e7eb;
+  --ring: #3ba776;
+  --radius: 0.5rem; /* 8px 高密度圆角 */
+}
+
+/* shadcn 语义 token → Tailwind 工具类映射（inline：保留 var() 引用，使主题覆写实时生效） */
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+  }
+}
