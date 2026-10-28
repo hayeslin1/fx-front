@@ -110,3 +110,39 @@ Wave 2（依赖 Wave 1）：
 - 已知取舍：项目无 shadcn Select/Textarea，页面用原生控件套既有令牌（未改 ui 目录）。
 - 没试什么：未做浏览器真机视觉与键盘走查（J1/J2 手工项留验收）；倒计时到点的 DOM 计时器
   交互未单测（逻辑为 Countdown onExpire + 提交前 now 双判定）；未启真实后端。
+
+## M4 运营交易与钱包（2026-10-28 起，按技术设计文档 §13 M4）
+
+- [x] 共享底座：shadcn Chart（recharts 3.10.1 锁版）+ 总览序列/报价健康/收益单/敞口明细/
+      账单筛选选择器（9 用例，LAST_7D 金样 19,876.87）→ commit 0d2827a
+- [x] 修复：D6 估值折算口径倒挂（× → ÷）根因修复（文档回写 + 选择器 + HomePage 单一实现）
+      → commit bf38246
+- [x] A 总览页（图表/数据表切换、KPI、敞口快照、报价健康，5 用例）→ commit d20e7b7
+- [x] B 客户管理列表+详情（搜索、六币种、USD 估值，6 用例）→ commit f470e9b
+- [x] C 交易管理（客户订单/收益订单，行内展开详情，6 用例）→ commit a72cead
+- [x] D 钱包管理（余额/账单/代客充值，8 用例）→ commit 07ea2b3
+- [x] E 敞口与平仓（快照明细/新建/整批重试/分配明细，6 用例）→ commit cf6b6d2
+- [x] 跨页 J3 冒烟（m4-ops-flow.test.tsx，4 用例）
+- [x] 全量门禁：lint 0 问题 / typecheck clean / 31 文件 350 用例全绿 / build 成功
+
+## Review（M4，2026-10-28）
+
+- 已完成：运营端 10 页全部脱离占位（总览/客户列表+详情/客户订单/收益订单/余额查询/
+  账单流水/代客充值/敞口/平仓）；store 读写全部收敛到 features/*/hooks（页面零 useAppStore
+  引用）；平仓/整批重试经真实领域服务重校验并重新锁价，exposure 快照来自 selectPairExposure。
+- 证据：`npm run lint` 0 问题；`npm run typecheck` clean；`npx vitest run` 31 文件 350 用例
+  全绿（M3 基线 24 文件 304 + 底座 selectors 11 + 六纵切文件 35）；`npm run build` 成功
+  （gzip JS 317.5KB）。J3 跨页冒烟：总览 19,876.87 / 9 笔 → 今日 0 笔且敞口 +1,700.00 与
+  报价健康快照不动；平仓 300.00 USD/EUR 后敞口 1,700→1,400（FIFO 先耗 EX-1）、PO-EX-1
+  未平 200→0、部分实现→已结算；CB-2 整批重试按价池重锁 151.00 转 SUCCESS，USD/JPY
+  收益单未平合计按批次金额冲减且明细出现第二次尝试。
+- 根因修复：D6 估值折算方向倒挂（选择器 × mid 与 HomePage ÷ mid 双实现矛盾）——PRD
+  「1 USD = R 报价币」口径下外币折 USD 应为除法；已回写文档 §10.2/§7.3/§10.3、选择器改除、
+  HomePage 收敛单一实现；÷ 金样 49,116.76 / 42,360.70 / 34,113.43（commit bf38246）。
+- 已知取舍：收益单状态与方向文案在 features/*/labels 就地维护（公共 StatusBadge 内置
+  映射与 §6.6 口径不符，未改公共组件）；overview 的 describeRange 与 selectors.resolveRange
+  口径重复（后者未导出）；订单/收益单详情用行内展开卡片（无新增路由，展开态不落 URL）；
+  无分页（原型无要求）。
+- 没试什么：未做浏览器真机视觉/键盘走查（J3 截图留验收）；FALLBACK/NO_QUOTE/FLAT/尾差等
+  无 seed 数据可触发的分支仅代码路径保证；双击/并发提交仅双守卫保证，未做 UI 级并发用例；
+  未启真实后端；ADR-001..004 同步 docs/decisions.md 仍待确认。
