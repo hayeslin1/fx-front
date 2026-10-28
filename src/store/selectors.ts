@@ -160,8 +160,9 @@ export interface UsdValuation {
 }
 
 /**
- * 客户资产 USD 参考估值（D6）：非 USD 余额 × 该币对最新原始中间价；无价格则不计入并提示。
- * USD 本身按 1:1 计入。
+ * 客户资产 USD 参考估值（D6）：外币余额 ÷ 该币对最新原始中间价。
+ * WHY 除法：币对统一按「1 USD = R 单位报价币」表示（PRD §3.4），故外币折 USD = 余额 ÷ R；
+ * 无价格则不计入并提示。USD 本身按 1:1 计入。
  */
 export function getCustomerUsdValuation(data: DataState, customerId: string): UsdValuation {
   let total = D('0');
@@ -182,7 +183,7 @@ export function getCustomerUsdValuation(data: DataState, customerId: string): Us
       missing.push(wallet.currency);
       continue;
     }
-    total = total.plus(D(wallet.balance).times(D(mid)));
+    total = total.plus(D(wallet.balance).div(mid));
   }
   return { totalUsd: roundCcy(total, 'USD').toFixed(2), missing };
 }
@@ -257,7 +258,12 @@ export function selectOverviewSummary(
     cursor = cursor.add(1, 'day')
   ) {
     const dayKey = cursor.format('YYYYMMDD');
-    buckets.set(dayKey, { dayKey, label: cursor.format('MM-DD'), volumeUsd: '0.00', orderCount: 0 });
+    buckets.set(dayKey, {
+      dayKey,
+      label: cursor.format('MM-DD'),
+      volumeUsd: '0.00',
+      orderCount: 0,
+    });
   }
 
   let total = D('0');
@@ -303,7 +309,8 @@ export interface QuoteHealthRow {
  */
 export function selectQuoteHealth(data: DataState, now: number): QuoteHealthRow[] {
   return PAIR_IDS.map((pairId) => {
-    const routingIds = data.fxConfig.routing.find((rule) => rule.pairId === pairId)?.channelIds ?? [];
+    const routingIds =
+      data.fxConfig.routing.find((rule) => rule.pairId === pairId)?.channelIds ?? [];
     for (const [index, channelId] of routingIds.entries()) {
       const channel = data.fxConfig.channels.find((item) => item.id === channelId);
       if (channel === undefined || !channel.enabled) continue;
@@ -340,8 +347,8 @@ export interface ProfitOrderFilter {
 
 /** 收益单列表（§7.3）：按收益单号排序保证稳定；筛选状态/币对 */
 export function selectProfitOrders(data: DataState, filter: ProfitOrderFilter = {}): ProfitOrder[] {
-  return selectLedger(data).profitOrders
-    .filter((po) => filter.status === undefined || po.status === filter.status)
+  return selectLedger(data)
+    .profitOrders.filter((po) => filter.status === undefined || po.status === filter.status)
     .filter((po) => filter.pairId === undefined || po.pairId === filter.pairId)
     .sort((a, b) => a.id.localeCompare(b.id));
 }

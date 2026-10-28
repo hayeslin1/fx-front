@@ -3,6 +3,7 @@ import { D, roundCcy, type Decimal } from '@/domain/money';
 import { buildSeed } from '@/domain/seed';
 import type { DataState } from '@/domain/types';
 import {
+  getCustomerUsdValuation,
   getOpsBills,
   selectOverviewSummary,
   selectPairLots,
@@ -72,9 +73,7 @@ describe('selectQuoteHealth（与报价引擎同口径）', () => {
 
     const ch02 = disabledPrimary.fxConfig.channels.find((c) => c.id === 'CH-02');
     if (ch02) ch02.enabled = false;
-    const none = selectQuoteHealth(disabledPrimary, ANCHOR).find(
-      (row) => row.pairId === 'USD/EUR',
-    );
+    const none = selectQuoteHealth(disabledPrimary, ANCHOR).find((row) => row.pairId === 'USD/EUR');
     expect(none?.status).toBe('NO_QUOTE');
     expect(none?.selectedChannelId).toBeUndefined();
   });
@@ -123,5 +122,23 @@ describe('selectProfitOrders / selectPairLots / getOpsBills', () => {
 
     const opsTopUps = getOpsBills(state, { customerId: 'C-002', type: 'TOPUP_OPS' });
     expect(opsTopUps).toHaveLength(1);
+  });
+});
+
+describe('getCustomerUsdValuation（D6：外币余额 ÷ 最新原始中间价）', () => {
+  it('三维客户 ÷ 口径金样（曾误用 × 使 JPY 余额放大 151.2 倍）', () => {
+    // C-001 推导：20500 + 7686.45/0.785 + 8203.15/0.92 + 500000/151.2 + 20000/7.245 + 30000/7.81
+    expect(getCustomerUsdValuation(state, 'C-001')).toEqual({ totalUsd: '49116.76', missing: [] });
+    expect(getCustomerUsdValuation(state, 'C-002').totalUsd).toBe('42360.70');
+    expect(getCustomerUsdValuation(state, 'C-003').totalUsd).toBe('34113.43');
+  });
+
+  it('缺参考价的外币不计入并列入 missing；USD 恒按 1:1 计入', () => {
+    const noEur = structuredClone(state);
+    noEur.fxConfig.rawPrices = noEur.fxConfig.rawPrices.filter((p) => p.pairId !== 'USD/EUR');
+    expect(getCustomerUsdValuation(noEur, 'C-001')).toEqual({
+      totalUsd: '40200.29',
+      missing: ['EUR'],
+    });
   });
 });

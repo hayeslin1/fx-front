@@ -7,24 +7,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { EmptyState } from '@/components/common/EmptyState';
 import { Money } from '@/components/common/Money';
 import { PageHeader } from '@/components/common/PageHeader';
-import { D, Decimal } from '@/domain/money';
-import { pairIdFor } from '@/domain/pairs';
-import type { Currency, DataState, PairId } from '@/domain/types';
+import type { Currency } from '@/domain/types';
 import { DIRECTION_LABELS } from '@/features/exchange/labels';
 import { BILL_TYPE_LABELS } from '@/features/wallet/labels';
 import { formatDateTime } from '@/lib/format';
 import { useAppStore } from '@/store';
-import { getCustomerById, getCustomerWallets } from '@/store/selectors';
-
-/** 该币对「最近一次」原始中间价（D6：忽略新鲜度与渠道启停；并列取先出现者） */
-function latestMidOf(data: DataState, pairId: PairId): string | undefined {
-  let best: { mid: string; collectedAt: number } | undefined;
-  for (const price of data.fxConfig.rawPrices) {
-    if (price.pairId !== pairId) continue;
-    if (!best || price.collectedAt > best.collectedAt) best = price;
-  }
-  return best?.mid;
-}
+import { getCustomerById, getCustomerUsdValuation, getCustomerWallets } from '@/store/selectors';
 
 interface ActivityRow {
   key: string;
@@ -46,25 +34,11 @@ export function HomePage() {
     [data, customerId],
   );
 
-  // USD 参考估值：外币余额 ÷ 该币对最新中间价（无价币种跳过并提示，PRD §10.2/D6）
-  const usdEstimate = useMemo(() => {
-    let total = D(0);
-    let missing = 0;
-    for (const wallet of wallets) {
-      if (wallet.currency === 'USD') {
-        total = total.plus(wallet.balance);
-        continue;
-      }
-      const pairId = pairIdFor('USD', wallet.currency);
-      const mid = pairId ? latestMidOf(data, pairId) : undefined;
-      if (mid === undefined) {
-        missing += 1;
-        continue;
-      }
-      total = total.plus(D(wallet.balance).div(mid));
-    }
-    return { value: total.toDecimalPlaces(2, Decimal.ROUND_HALF_UP).toFixed(2), missing };
-  }, [wallets, data]);
+  // USD 参考估值：统一复用选择器（单一实现，D6；外币 ÷ 最新原始中间价，无价币种跳过并提示）
+  const valuation = useMemo(
+    () => getCustomerUsdValuation(data, customerId ?? ''),
+    [data, customerId],
+  );
 
   const activities = useMemo<ActivityRow[]>(() => {
     if (!customerId) return [];
@@ -101,11 +75,11 @@ export function HomePage() {
         <CardContent className="space-y-1 p-6">
           <p className="text-sm text-muted-foreground">资产参考估值（按最新中间价折算）</p>
           <p className="text-3xl font-semibold tracking-tight">
-            <Money value={usdEstimate.value} currency="USD" />
+            <Money value={valuation.totalUsd} currency="USD" />
           </p>
-          {usdEstimate.missing > 0 ? (
+          {valuation.missing.length > 0 ? (
             <p className="text-xs text-amber-700">
-              有 {usdEstimate.missing} 种币种暂缺参考价，未计入估值
+              有 {valuation.missing.length} 种币种暂缺参考价，未计入估值
             </p>
           ) : null}
         </CardContent>
