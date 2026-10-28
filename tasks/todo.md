@@ -146,3 +146,50 @@ Wave 2（依赖 Wave 1）：
 - 没试什么：未做浏览器真机视觉/键盘走查（J3 截图留验收）；FALLBACK/NO_QUOTE/FLAT/尾差等
   无 seed 数据可触发的分支仅代码路径保证；双击/并发提交仅双守卫保证，未做 UI 级并发用例；
   未启真实后端；ADR-001..004 同步 docs/decisions.md 仍待确认。
+
+## M5 汇率运营与客服 + 打磨（2026-10-28 起，按技术设计文档 §13 M5）
+
+- [x] 修复：新增渠道首采缺口（§5.4 无价渠道须可首采；服务+文档+领域测试）→ commit 9c749fe
+- [x] F2 采集池（FxPoolPage + features/fx-pool，模拟采集/全部采集/报价开关/有效状态，7 用例）→ commit 38709bf
+- [x] F1 渠道管理 + 币对管理（FxChannelsPage/FxPairsPage + features/fx-channels，7 用例）→ commit 16d94bc
+- [x] F4 报价计算器（FxCalculatorPage + features/fx-calculator，只读+诊断，6 用例）→ commit d5651f9
+- [x] F3 报价路由 + 加点配置（FxRoutingPage/FxMarkupsPage + features/fx-routing，6 用例）→ commit 7be6eb9
+- [x] F5 客服处理（SupportTicketsPage/SupportTicketDetailPage + features/ops-support，7 用例）→ commit ad2df7c
+- [x] J4 报价链路冒烟（m5-fx-flow，2 用例：采集步进→主渠道命中→回退次渠道→
+      全停用无报价+逐渠道原因→恢复→加点只对新报价生效且历史快照零变更）→ commit 6b085c7
+- [x] J5 工单与持久化冒烟（m5-support-persistence，2 用例：建单→指派/回复/关闭→
+      客户端一致禁回复→二次引导双端一致→重置恢复金样+会话退出）→ commit 6b085c7
+- [x] a11y 走查与打磨（验收 12：跳转链接/main 地标/表头 scope/弹窗语义/按钮可访问名称/
+      状态双通道/焦点环兜底；a11y.test.tsx 8 用例）
+- [x] 全量门禁：lint 0 问题 / typecheck clean / 39 文件 397 用例全绿 / build 成功
+
+## Review（M5，2026-10-28）
+
+- 已完成：汇率运营六页（渠道管理/币对管理/采集池/报价路由/加点配置/报价计算器）与
+  客服处理两页（工单列表筛选、详情指派/回复/流转/关闭/重开）全部脱离占位；store 读写
+  全部收敛到 features/*/hooks（页面零 useAppStore 引用）；a11y 打磨覆盖双端壳与公共组件。
+- 证据：`npm run lint` 0 问题；`npm run typecheck` clean；`npx vitest run` 39 文件 397 用例
+  全绿（M4 基线 350 + 首采新增 2 + F1–F5 纵切 33 + J4/J5 4 + a11y 8）；`npm run build` 成功
+  （gzip JS 328.21KB）。J4：采集步进→主渠道命中→停用回退次渠道→全停用「暂无有效报价+
+  逐渠道诊断 3×渠道已停用」→恢复→加点 100bps 只对新报价生效且历史订单快照零变更。
+  J5：建单→指派/回复（首条置处理中）/关闭→客户端一致禁回复→二次引导双端一致→重置
+  恢复 §5.4 金样（9 订单/18 钱包/3 工单/2 平仓批次）且双端会话退出。
+- 根因修复：新增渠道首采缺口（§5.4 承诺「新增渠道须先模拟采集」，但 collect 对无价渠道
+  返回 PRICE_NOT_FOUND）——回写文档 §5.4 尾句、服务层首采基准=该币对采集前最新原始价
+  （collectedAt 最新、并列取先出现者，quoteEnabled 默认开）、领域测试新增 2 用例并重写
+  失败用例、F2 纵切用例改走首采成功路径（commit 9c749fe）。
+- a11y 已修：跳过导航链接（两端壳首个可聚焦元素）+ main 地标唯一 + 全局焦点环兜底；
+  DataTable/原生表格表头 scope="col"；钱包两表 aria-label 区分；运营自定义区间结束日期
+  aria-label；确认弹窗 role=alertdialog + 标题/描述关联；订单列表订单号改可键盘聚焦链接
+  （原仅行点击，键盘不可达）；404 页补 main 地标；币对启停开关补 aria-checked；存储提示条
+  补 role="status"（live region）。
+- 已知遗留（a11y 页面级清单，本轮未修，需另行排期）：
+  1) 对比度令牌级不达标（客户 muted-foreground 3.83:1、主按钮白字 3.01:1、边框 1.21:1；
+     运营 4.43:1）——§11.1 已规定取值，须先回写设计文档再改令牌；
+  2) 展开卡片内 h3 直接跟在 h1 后（TradingOrdersPage/ProfitOrdersPage）；
+  3) 表单错误未与控件建立 aria-describedby 关联（登录/注册/充值/兑换/新建工单等多页）；
+  4) 「模拟结果」单 radio 组缺 fieldset/legend 组语义（CloseBatchesPage）。
+- 没试什么：浏览器真机视觉与键盘 Tab 顺序走查、读屏器（NVDA/VoiceOver）实测、对比度
+  渲染像素核对（jsdom 无 CSS/焦点可见性）；devtools 手工篡改 localStorage 后刷新（§12.3
+  J5 手工项）；Chart 键盘遍历数据点；未启真实后端；ADR-001..004 同步 docs/decisions.md
+  仍待确认。
