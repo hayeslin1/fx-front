@@ -113,7 +113,7 @@ export function OpsLayout() {
       <SkipLink />
       <aside
         className={cn(
-          'flex shrink-0 flex-col border-r bg-card transition-[width] duration-200 ease-out',
+          'group flex shrink-0 flex-col border-r bg-card transition-[width] duration-200 ease-out',
           collapsed ? 'w-16' : 'w-56',
         )}
       >
@@ -130,7 +130,7 @@ export function OpsLayout() {
           {NAV_GROUPS.map((group) => (
             <div key={group.title} className="space-y-1">
               {!collapsed && (
-                <p className="px-2 pb-1 pt-2 text-xs font-medium text-muted-foreground">
+                <p className="px-2 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70">
                   {group.title}
                 </p>
               )}
@@ -143,7 +143,7 @@ export function OpsLayout() {
                     className={({ isActive }) =>
                       cn(
                         'flex items-center rounded-md transition-colors',
-                        collapsed ? 'justify-center py-2' : 'px-2 py-1.5 text-[13px]',
+                        collapsed ? 'justify-center py-2' : 'px-2 py-1.5 text-sm',
                         isActive
                           ? 'bg-accent font-medium text-accent-foreground'
                           : 'text-muted-foreground hover:bg-muted hover:text-foreground',
@@ -159,7 +159,7 @@ export function OpsLayout() {
             </div>
           ))}
         </nav>
-        <div className="border-t p-2">
+        <div className="border-t p-2 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
           <Button
             variant="ghost"
             size="icon"
