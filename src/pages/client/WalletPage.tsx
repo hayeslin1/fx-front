@@ -127,6 +127,7 @@ export function WalletPage() {
         <CardContent>
           <DataTable
             ariaLabel="六币种余额"
+            stickyFirstColumn
             columns={WALLET_COLUMNS}
             rows={wallets}
             rowKey={(wallet) => wallet.currency}
@@ -163,6 +164,7 @@ export function WalletPage() {
         <CardContent>
           <DataTable
             ariaLabel="资金流水"
+            stickyFirstColumn
             columns={BILL_COLUMNS}
             rows={bills}
             rowKey={(bill) => bill.id}

@@ -62,6 +62,7 @@ export function SupportListPage() {
         columns={COLUMNS}
         rows={tickets}
         rowKey={(ticket) => ticket.id}
+        stickyFirstColumn
         onRowClick={(ticket) => navigate(`/app/support/${ticket.id}`)}
         empty={
           <EmptyState

@@ -30,6 +30,12 @@ interface DataTableProps<T> {
    * 可选，不传则不渲染该属性（不影响既有渲染与样式）。
    */
   ariaLabel?: string;
+  /**
+   * 窄屏横向滚动时冻结首列（粘性定位）。
+   * 宽表（如 WalletPage 7 列、OrdersPage 8 列）在窄视口横向滚动时，
+   * 首列（币种/订单号）保持可见，用户始终知道当前在看哪一行。
+   */
+  stickyFirstColumn?: boolean;
 }
 
 const ALIGN_CLASS = { left: 'text-left', right: 'text-right', center: 'text-center' } as const;
@@ -41,7 +47,11 @@ export function DataTable<T>({
   empty,
   onRowClick,
   ariaLabel,
+  stickyFirstColumn,
 }: DataTableProps<T>) {
+  // 首列粘性样式：横向滚动时冻结首列，内容滚动时始终可见（bg-card 保证覆盖下方内容）
+  const STICKY_FIRST = 'sticky left-0 z-10 bg-card';
+
   if (rows.length === 0 && empty !== undefined) {
     return <>{empty}</>;
   }
@@ -50,11 +60,15 @@ export function DataTable<T>({
       <Table aria-label={ariaLabel}>
         <TableHeader>
           <TableRow>
-            {columns.map((col) => (
+            {columns.map((col, index) => (
               <TableHead
                 key={col.key}
                 scope="col"
-                className={cn(ALIGN_CLASS[col.align ?? 'left'], col.className)}
+                className={cn(
+                  ALIGN_CLASS[col.align ?? 'left'],
+                  stickyFirstColumn && index === 0 && STICKY_FIRST,
+                  col.className,
+                )}
               >
                 {col.header}
               </TableHead>
@@ -68,10 +82,14 @@ export function DataTable<T>({
               onClick={onRowClick ? () => onRowClick(row) : undefined}
               className={onRowClick ? 'cursor-pointer' : undefined}
             >
-              {columns.map((col) => (
+              {columns.map((col, index) => (
                 <TableCell
                   key={col.key}
-                  className={cn(ALIGN_CLASS[col.align ?? 'left'], col.className)}
+                  className={cn(
+                    ALIGN_CLASS[col.align ?? 'left'],
+                    stickyFirstColumn && index === 0 && STICKY_FIRST,
+                    col.className,
+                  )}
                 >
                   {col.cell(row)}
                 </TableCell>

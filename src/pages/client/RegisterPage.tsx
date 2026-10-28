@@ -49,7 +49,7 @@ export function RegisterPage() {
 
   return (
     <div className="space-y-4">
-      <Card>
+      <Card className="mx-auto max-w-md">
         <CardHeader>
           <CardTitle>注册</CardTitle>
           <CardDescription>
@@ -113,7 +113,7 @@ export function RegisterPage() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="mx-auto max-w-md">
         <CardHeader>
           <CardTitle className="text-sm">演示账号（仅演示数据）</CardTitle>
           <CardDescription>也可以直接使用以下预置客户账号登录</CardDescription>

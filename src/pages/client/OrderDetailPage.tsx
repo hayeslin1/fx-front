@@ -155,6 +155,7 @@ export function OrderDetailPage() {
         <CardContent>
           <DataTable
             ariaLabel="关联钱包流水"
+            stickyFirstColumn
             columns={billColumns}
             rows={bills}
             rowKey={(bill) => bill.id}
